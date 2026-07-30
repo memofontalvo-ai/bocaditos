@@ -1,0 +1,1021 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>Bocaditos — Gestión de producción y ventas</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Pacifico&family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+:root{
+  --masa:#17120E;
+  --masa-2:#241B14;
+  --crema:#F7E2BC;
+  --papel:#FBF4E9;
+  --papel-2:#F3E7D4;
+  --terracota:#C4571B;
+  --terracota-d:#9E4413;
+  --ambar:#E8A33D;
+  --verde:#5F8F4A;
+  --rojo:#BE3F35;
+  --tinta:#2C231C;
+  --tinta-3:#8A7A6A;
+  --linea:#E2D3BC;
+  --r:14px;
+  --sh:0 2px 10px rgba(23,18,14,.08);
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;padding:0}
+body{
+  font-family:'Nunito',system-ui,-apple-system,sans-serif;
+  background:var(--papel);color:var(--tinta);
+  font-size:15px;line-height:1.45;
+  padding-bottom:env(safe-area-inset-bottom);
+}
+button,input,select,textarea{font-family:inherit;font-size:16px}
+h1,h2,h3{margin:0;line-height:1.2}
+.wordmark{font-family:'Pacifico',cursive;color:var(--crema);letter-spacing:.5px;font-weight:400}
+.hide{display:none !important}
+
+/* ---------- LOGIN ---------- */
+#login{
+  position:fixed;inset:0;z-index:100;
+  background:radial-gradient(120% 90% at 50% 40%, #2A2018 0%, #17120E 70%);
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  padding:28px;
+}
+#login .mark{font-size:clamp(46px,13vw,64px);text-shadow:0 4px 0 rgba(0,0,0,.35);margin-bottom:6px}
+#login .sub{color:#A08D74;font-size:12px;letter-spacing:1.8px;text-transform:uppercase;font-weight:700;margin-bottom:34px;text-align:center;max-width:280px;line-height:1.6}
+#login form{width:100%;max-width:330px;display:flex;flex-direction:column;gap:12px}
+#login input{
+  background:rgba(247,226,188,.07);border:1.5px solid rgba(247,226,188,.22);
+  color:var(--crema);padding:14px 16px;border-radius:12px;outline:none;
+}
+#login input::placeholder{color:#8C7B67}
+#login input:focus{border-color:var(--ambar)}
+#login button{
+  background:var(--terracota);color:#fff;border:none;padding:15px;border-radius:12px;
+  font-weight:800;font-size:16px;cursor:pointer;margin-top:6px;
+}
+#login button:active{background:var(--terracota-d)}
+#loginErr{color:#E88A80;font-size:13px;min-height:18px;text-align:center;font-weight:600}
+#login .hint{color:#7E6E5C;font-size:12px;margin-top:26px;text-align:center;line-height:1.7}
+#login .spark{position:absolute;bottom:26px;right:26px;color:#3A2E23;font-size:22px}
+
+/* ---------- SHELL ---------- */
+header{
+  background:var(--masa);color:var(--crema);
+  padding:calc(12px + env(safe-area-inset-top)) 16px 12px;
+  display:flex;align-items:center;justify-content:space-between;gap:10px;
+  position:sticky;top:0;z-index:40;
+}
+header .mark{font-size:27px}
+header .who{text-align:right;line-height:1.15}
+header .who b{display:block;font-size:13px;color:var(--crema)}
+header .who span{font-size:11px;color:#A08D74;text-transform:uppercase;letter-spacing:.8px;font-weight:700}
+header .out{background:none;border:1px solid #4A3B2C;color:#A08D74;border-radius:9px;padding:7px 10px;cursor:pointer;font-size:12px;font-weight:700}
+
+main{padding:16px 14px 96px;max-width:1100px;margin:0 auto}
+
+nav{
+  position:fixed;bottom:0;left:0;right:0;z-index:40;
+  background:var(--masa);border-top:3px solid var(--terracota);
+}
+#navScroll{
+  display:flex;gap:4px;
+  padding:6px 10px calc(6px + env(safe-area-inset-bottom));
+  overflow-x:auto;overflow-y:hidden;
+  scroll-snap-type:x proximity;
+  -webkit-overflow-scrolling:touch;
+  scrollbar-width:none;
+}
+#navScroll::-webkit-scrollbar{display:none}
+nav::after{
+  content:'';position:absolute;top:3px;right:0;bottom:0;width:26px;pointer-events:none;
+  background:linear-gradient(to right,rgba(23,18,14,0),var(--masa));
+}
+nav button{
+  background:none;border:none;color:#8C7B67;display:flex;flex-direction:column;align-items:center;
+  gap:3px;padding:8px 12px;cursor:pointer;font-size:10px;font-weight:800;
+  letter-spacing:.2px;text-transform:uppercase;border-radius:12px;
+  flex:0 0 auto;min-width:64px;white-space:nowrap;scroll-snap-align:center;
+}
+nav button .ic{font-size:20px;line-height:1}
+nav button.on{color:var(--crema);background:rgba(196,87,27,.32)}
+@media(min-width:760px){
+  #navScroll{justify-content:center;overflow-x:visible}
+  nav::after{display:none}
+  nav button{min-width:84px}
+}
+
+/* ---------- COMPONENTES ---------- */
+.page-h{display:flex;align-items:flex-end;justify-content:space-between;gap:10px;margin-bottom:14px}
+.page-h h2{font-size:22px;font-weight:900;letter-spacing:-.3px}
+.page-h p{margin:2px 0 0;font-size:13px;color:var(--tinta-3)}
+.eyebrow{font-size:11px;letter-spacing:1.6px;text-transform:uppercase;color:var(--terracota);font-weight:900;margin-bottom:4px}
+
+.card{background:#fff;border:1px solid var(--linea);border-radius:var(--r);padding:14px;box-shadow:var(--sh);margin-bottom:12px}
+.card h3{font-size:15px;font-weight:900;margin-bottom:8px}
+
+.btn{background:var(--terracota);color:#fff;border:none;padding:12px 16px;border-radius:11px;font-weight:800;cursor:pointer;font-size:14px}
+.btn:active{background:var(--terracota-d)}
+.btn.ghost{background:transparent;color:var(--terracota);border:1.5px solid var(--terracota)}
+.btn.dark{background:var(--masa)}
+.btn.sm{padding:8px 12px;font-size:13px;border-radius:9px}
+.btn.wide{width:100%}
+.btn:disabled{opacity:.4;cursor:not-allowed}
+
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+@media(max-width:520px){.grid3{grid-template-columns:1fr 1fr}}
+
+.stat{background:#fff;border:1px solid var(--linea);border-radius:var(--r);padding:12px;box-shadow:var(--sh)}
+.stat .l{font-size:10.5px;text-transform:uppercase;letter-spacing:1px;color:var(--tinta-3);font-weight:800}
+.stat .v{font-size:21px;font-weight:900;margin-top:3px;font-variant-numeric:tabular-nums;letter-spacing:-.5px}
+.stat.acc{background:var(--masa);border-color:var(--masa)}
+.stat.acc .l{color:#A08D74}.stat.acc .v{color:var(--crema)}
+
+.row{display:flex;align-items:center;gap:10px;padding:11px 0;border-bottom:1px solid var(--linea)}
+.row:last-child{border-bottom:none}
+.row .g{flex:1;min-width:0}
+.row .t{font-weight:800;font-size:14.5px}
+.row .s{font-size:12.5px;color:var(--tinta-3);margin-top:1px}
+.row .n{font-weight:900;font-variant-numeric:tabular-nums;text-align:right;white-space:nowrap}
+.row .n small{display:block;font-size:11px;color:var(--tinta-3);font-weight:700}
+
+.pill{display:inline-block;font-size:10.5px;font-weight:900;text-transform:uppercase;letter-spacing:.7px;padding:3px 8px;border-radius:20px;background:var(--papel-2);color:var(--tinta-3)}
+.pill.t{background:#F6E0CF;color:var(--terracota-d)}
+.pill.v{background:#E2EFDB;color:#3F6B2E}
+.pill.r{background:#F8DDDA;color:#9A2E26}
+.pill.a{background:#FBEBCF;color:#8A5F13}
+
+.empty{text-align:center;padding:26px 14px;color:var(--tinta-3);font-size:13.5px}
+.empty .ic{font-size:32px;display:block;margin-bottom:8px;opacity:.5}
+
+label{display:block;font-size:11.5px;font-weight:900;text-transform:uppercase;letter-spacing:.8px;color:var(--tinta-3);margin-bottom:5px}
+.f{margin-bottom:12px}
+.f input,.f select{
+  width:100%;padding:12px 13px;border:1.5px solid var(--linea);border-radius:11px;
+  background:var(--papel);outline:none;color:var(--tinta);font-weight:600;
+}
+.f input:focus,.f select:focus{border-color:var(--terracota);background:#fff}
+
+/* modal */
+#modal{position:fixed;inset:0;z-index:80;background:rgba(23,18,14,.55);display:flex;align-items:flex-end;justify-content:center}
+#modal .box{background:var(--papel);width:100%;max-width:560px;border-radius:20px 20px 0 0;padding:18px 16px calc(20px + env(safe-area-inset-bottom));max-height:92vh;overflow:auto}
+@media(min-width:600px){#modal{align-items:center}#modal .box{border-radius:20px}}
+#modal .mh{display:flex;justify-content:space-between;align-items:center;margin-bottom:14px}
+#modal .mh h3{font-size:19px;font-weight:900}
+#modal .x{background:none;border:none;font-size:26px;color:var(--tinta-3);cursor:pointer;line-height:1;padding:0 4px}
+
+.linea-item{display:flex;gap:8px;align-items:flex-end;margin-bottom:8px}
+.linea-item .f{flex:1;margin-bottom:0}
+.linea-item .del{background:#F8DDDA;color:#9A2E26;border:none;border-radius:10px;width:42px;height:44px;font-size:18px;cursor:pointer;flex-shrink:0;font-weight:900}
+
+.tot{background:var(--masa);color:var(--crema);border-radius:var(--r);padding:14px;margin:12px 0}
+.tot .l{display:flex;justify-content:space-between;padding:5px 0;font-size:13.5px;color:#C9B79C;font-weight:700}
+.tot .l b{color:var(--crema);font-variant-numeric:tabular-nums}
+.tot .big{border-top:1px solid #4A3B2C;margin-top:8px;padding-top:10px;font-size:16px}
+.tot .big b{font-size:20px;font-weight:900}
+
+.sello{
+  background:linear-gradient(135deg,var(--terracota),#D9762F);color:#fff;border-radius:var(--r);
+  padding:16px;text-align:center;margin:12px 0;
+}
+.sello .l{font-size:10.5px;letter-spacing:2px;text-transform:uppercase;font-weight:900;opacity:.85}
+.sello .v{font-size:34px;font-weight:900;font-variant-numeric:tabular-nums;letter-spacing:-1px;margin:2px 0}
+.sello .s{font-size:12px;opacity:.9;font-weight:700}
+
+#toast{position:fixed;left:50%;transform:translateX(-50%);bottom:88px;background:var(--masa);color:var(--crema);
+  padding:12px 18px;border-radius:30px;font-weight:800;font-size:13.5px;z-index:200;opacity:0;transition:.25s;pointer-events:none;box-shadow:0 6px 20px rgba(0,0,0,.3)}
+#toast.on{opacity:1;bottom:100px}
+.bar{height:7px;background:var(--papel-2);border-radius:6px;overflow:hidden;margin-top:6px}
+.bar i{display:block;height:100%;background:var(--verde);border-radius:6px}
+.bar i.low{background:var(--rojo)}
+</style>
+</head>
+<body>
+
+<!-- ============ LOGIN ============ -->
+<div id="login">
+  <div class="mark wordmark">Bocaditos</div>
+  <div class="sub">Gestión de producción y ventas</div>
+  <form id="loginForm" autocomplete="off">
+    <input id="lu" placeholder="Usuario" autocapitalize="none">
+    <input id="lp" type="password" placeholder="Contraseña">
+    <div id="loginErr"></div>
+    <button type="submit">Entrar</button>
+  </form>
+  <div class="hint"><span id="estado">Conectando…</span><br><br>Primer ingreso — administrador<br><b>admin</b> / <b>admin123</b></div>
+  <div class="spark">✦</div>
+</div>
+
+<!-- ============ APP ============ -->
+<div id="app" class="hide">
+  <header>
+    <div class="mark wordmark">Bocaditos</div>
+    <div style="display:flex;align-items:center;gap:10px">
+      <div class="who"><b id="hName"></b><span id="hRol"></span></div>
+      <button class="out" onclick="salir()">Salir</button>
+    </div>
+  </header>
+  <main id="view"></main>
+  <nav><div id="navScroll"></div></nav>
+</div>
+
+<div id="modal" class="hide"><div class="box"><div class="mh"><h3 id="mTitle"></h3><button class="x" onclick="cerrarModal()">×</button></div><div id="mBody"></div></div></div>
+<div id="toast"></div>
+
+<!-- ====== Conexión con Firebase / Firestore ====== -->
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/12.16.0/firebase-app.js";
+import { getFirestore, doc, getDoc, setDoc, onSnapshot }
+  from "https://www.gstatic.com/firebasejs/12.16.0/firebase-firestore.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyDtKeH67TDb_QWA6aWuPFUn-xOwbQp-nXg",
+  authDomain: "bocaditos-b8d60.firebaseapp.com",
+  projectId: "bocaditos-b8d60",
+  storageBucket: "bocaditos-b8d60.firebasestorage.app",
+  messagingSenderId: "768691103955",
+  appId: "1:768691103955:web:d0aa3297b45430aa790c26"
+};
+
+const app = initializeApp(firebaseConfig);
+const db  = getFirestore(app);
+const ref = doc(db, "bocaditos", "datos");
+
+window.FB = {
+  leer:   ()      => getDoc(ref),
+  grabar: (json)  => setDoc(ref, { json, actualizado: Date.now() }),
+  escuchar:(cb)   => onSnapshot(ref, s => { if(s.exists()) cb(s.data().json); })
+};
+window.dispatchEvent(new Event('fb-listo'));
+</script>
+
+<script>
+/* =========================================================
+   BOCADITOS — Sistema de gestión de producción y ventas
+   Datos en la nube con Firestore (proyecto bocaditos-b8d60)
+   ========================================================= */
+
+let DB=null, USER=null, VIEW='inicio';
+let ultimoJSON='', sinConexion=false;
+
+/* ---------- almacenamiento en Firestore ---------- */
+function esperarFB(){
+  return new Promise(res=>{
+    if(window.FB) return res();
+    window.addEventListener('fb-listo', ()=>res(), {once:true});
+    setTimeout(res, 8000); // si no carga, seguimos sin nube
+  });
+}
+async function guardar(){
+  const json=JSON.stringify(DB);
+  ultimoJSON=json;
+  if(!window.FB){ sinConexion=true; return; }
+  try{ await window.FB.grabar(json); sinConexion=false; }
+  catch(e){ sinConexion=true; toast('Sin conexión — no se guardó en la nube'); }
+}
+
+function dbNueva(){
+  return {
+    seq:100,
+    usuarios:[{id:1,nombre:'Administrador',usuario:'admin',clave:'admin123',rol:'admin',cargo:'Administrador',vhProd:0,vhCom:0,activo:true}],
+    insumos:[], entradas:[], productos:[], lotes:[], asignaciones:[], stockProd:{}
+  };
+}
+function nid(){ return ++DB.seq; }
+
+/* ---------- utilidades ---------- */
+const $=id=>document.getElementById(id);
+const money=n=>'$'+Math.round(n||0).toLocaleString('es-CO');
+const num=n=>(Math.round((n||0)*100)/100).toLocaleString('es-CO');
+const esc=s=>String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const hoy=()=>new Date().toISOString().slice(0,10);
+function fecha(iso){ if(!iso) return ''; const d=new Date(iso); return d.toLocaleDateString('es-CO',{day:'2-digit',month:'short',year:'numeric'}); }
+function fechaHora(iso){ if(!iso) return ''; const d=new Date(iso); return d.toLocaleDateString('es-CO',{day:'2-digit',month:'short'})+' · '+d.toLocaleTimeString('es-CO',{hour:'2-digit',minute:'2-digit'}); }
+const UNI={g:'gramos',ml:'mililitros',und:'unidades'};
+const UNIC={g:'g',ml:'ml',und:'und'};
+const ROL={admin:'Administrador',produccion:'Producción',vendedor:'Vendedor',ambos:'Producción y ventas'};
+
+function toast(t){ const e=$('toast'); e.textContent=t; e.classList.add('on'); setTimeout(()=>e.classList.remove('on'),2200); }
+function abrirModal(titulo,html){ $('mTitle').textContent=titulo; $('mBody').innerHTML=html; $('modal').classList.remove('hide'); }
+function cerrarModal(){ $('modal').classList.add('hide'); $('mBody').innerHTML=''; }
+
+const insumo=id=>DB.insumos.find(i=>i.id==id);
+const producto=id=>DB.productos.find(p=>p.id==id);
+const usuario=id=>DB.usuarios.find(u=>u.id==id);
+const stockDe=id=>DB.stockProd[id]||0;
+const puedeProducir=u=>u&&(u.rol==='produccion'||u.rol==='ambos');
+const puedeVender=u=>u&&(u.rol==='vendedor'||u.rol==='ambos');
+
+/* ---------- arranque ---------- */
+(async function init(){
+  await esperarFB();
+  if(window.FB){
+    try{
+      const snap=await window.FB.leer();
+      if(snap.exists() && snap.data().json){ DB=JSON.parse(snap.data().json); }
+      else { DB=dbNueva(); await guardar(); }
+      // sincronización en vivo entre dispositivos
+      window.FB.escuchar(json=>{
+        if(json===ultimoJSON) return;
+        ultimoJSON=json; DB=JSON.parse(json);
+        if(USER){ const u=DB.usuarios.find(x=>x.id==USER.id); if(u) USER=u; render(); }
+      });
+      $('estado').textContent='Conectado a la nube';
+    }catch(e){
+      DB=dbNueva(); sinConexion=true;
+      $('estado').textContent='Sin conexión con la base de datos';
+    }
+  }else{
+    DB=dbNueva(); sinConexion=true;
+    $('estado').textContent='Sin conexión con la base de datos';
+  }
+  if(!DB.stockProd) DB.stockProd={};
+})();
+
+$('loginForm').addEventListener('submit',async e=>{
+  e.preventDefault();
+  if(!DB){ $('loginErr').textContent='Cargando datos, intenta otra vez.'; return; }
+  const u=$('lu').value.trim().toLowerCase(), c=$('lp').value;
+  const encontrado=DB.usuarios.find(x=>x.usuario.toLowerCase()===u && x.clave===c && x.activo!==false);
+  if(!encontrado){ $('loginErr').textContent='Usuario o contraseña incorrectos.'; return; }
+  USER=encontrado; $('loginErr').textContent=''; $('lp').value='';
+  $('login').classList.add('hide'); $('app').classList.remove('hide');
+  $('hName').textContent=USER.nombre; $('hRol').textContent=ROL[USER.rol];
+  VIEW='inicio'; pintarNav(); render();
+});
+
+function salir(){ USER=null; $('app').classList.add('hide'); $('login').classList.remove('hide'); $('lu').value=''; $('lp').value=''; }
+
+/* ---------- navegación ---------- */
+function menuDe(u){
+  if(u.rol==='admin') return [
+    ['inicio','Inicio','🏠'],['insumos','Insumos','🌽'],['productos','Productos','🥟'],
+    ['produccion','Producción','🔥'],['inventario','Bodega','📦'],['ventas','Ventas','🛵'],
+    ['empleados','Equipo','👥'],['reportes','Reportes','📊']
+  ];
+  const m=[['inicio','Inicio','🏠']];
+  if(puedeProducir(u)) m.push(['mishoras','Mis horas','⏱️']);
+  if(puedeVender(u)) m.push(['misventas','Mis ventas','🛵']);
+  return m;
+}
+function pintarNav(){
+  $('navScroll').innerHTML=menuDe(USER).map(([k,t,i])=>
+    `<button id="nav_${k}" class="${VIEW===k?'on':''}" onclick="ir('${k}')"><span class="ic">${i}</span>${t}</button>`).join('');
+  const act=$('nav_'+VIEW);
+  if(act&&act.scrollIntoView) act.scrollIntoView({behavior:'smooth',block:'nearest',inline:'center'});
+}
+function ir(v){ VIEW=v; pintarNav(); render(); window.scrollTo(0,0); }
+
+function render(){
+  const f={inicio:vInicio,insumos:vInsumos,productos:vProductos,produccion:vProduccion,
+    inventario:vInventario,ventas:vVentas,empleados:vEmpleados,reportes:vReportes,
+    mishoras:vMisHoras,misventas:vMisVentas}[VIEW]||vInicio;
+  $('view').innerHTML=f();
+}
+const vacio=(ic,t)=>`<div class="empty"><span class="ic">${ic}</span>${t}</div>`;
+const head=(t,s,btn='')=>`<div class="page-h"><div><h2>${t}</h2><p>${s}</p></div>${btn}</div>`;
+
+/* =========================================================
+   INICIO
+   ========================================================= */
+function vInicio(){
+  if(USER.rol!=='admin') return inicioEmpleado();
+  const totalEmp=Object.values(DB.stockProd).reduce((a,b)=>a+b,0);
+  const bajos=DB.insumos.filter(i=>i.stock<=(i.minimo||0)).length;
+  const pend=DB.asignaciones.reduce((a,x)=>a+(x.cantidad-x.vendidas),0);
+  const lote=DB.lotes[DB.lotes.length-1];
+  const valorInv=DB.insumos.reduce((a,i)=>a+i.stock*i.precio,0);
+  return head('Hola, '+USER.nombre.split(' ')[0],'Resumen de hoy · '+fecha(hoy()))+`
+  <div class="grid2">
+    <div class="stat acc"><div class="l">Empanadas en bodega</div><div class="v">${num(totalEmp)}</div></div>
+    <div class="stat"><div class="l">Pendientes por vender</div><div class="v">${num(pend)}</div></div>
+    <div class="stat"><div class="l">Valor en insumos</div><div class="v">${money(valorInv)}</div></div>
+    <div class="stat"><div class="l">Insumos en bajo stock</div><div class="v" style="color:${bajos?'var(--rojo)':'inherit'}">${bajos}</div></div>
+  </div>
+  <div class="card"><h3>Acciones rápidas</h3>
+    <div class="grid2" style="gap:8px">
+      <button class="btn sm" onclick="ir('produccion');setTimeout(formLote,50)">＋ Nuevo lote</button>
+      <button class="btn sm ghost" onclick="ir('insumos');setTimeout(formEntrada,50)">＋ Entrada de insumo</button>
+      <button class="btn sm ghost" onclick="ir('ventas');setTimeout(formAsignar,50)">＋ Asignar a vendedor</button>
+      <button class="btn sm ghost" onclick="ir('productos');setTimeout(formProducto,50)">＋ Nuevo producto</button>
+    </div>
+  </div>
+  <div class="card"><h3>Inventario de empanadas</h3>
+    ${DB.productos.length? DB.productos.map(p=>`<div class="row"><div class="g"><div class="t">${esc(p.nombre)}</div><div class="s">Venta ${money(p.precio)} · comisión ${p.comision}%</div></div><div class="n">${num(stockDe(p.id))}<small>unidades</small></div></div>`).join('') : vacio('🥟','Todavía no hay productos creados.')}
+  </div>
+  <div class="card"><h3>Último lote</h3>
+    ${lote? `<div class="row"><div class="g"><div class="t">Lote #${lote.id} · ${fecha(lote.fecha)}</div><div class="s">${lote.producidos.reduce((a,x)=>a+x.cantidad,0)} empanadas · ${lote.mano.length} personas</div></div><div class="n">${money(lote.costoTotal)}<small>costo total</small></div></div>` : vacio('🔥','Aún no se ha registrado producción.')}
+  </div>`;
+}
+
+function inicioEmpleado(){
+  let h='';
+  const horas=DB.lotes.flatMap(l=>l.mano.filter(m=>m.empleadoId==USER.id).map(m=>({...m,lote:l})));
+  const totalH=horas.reduce((a,x)=>a+x.horas,0);
+  const pagoH=horas.reduce((a,x)=>a+x.horas*x.valorHora,0);
+  const mias=DB.asignaciones.filter(a=>a.vendedorId==USER.id);
+  const pend=mias.reduce((a,x)=>a+(x.cantidad-x.vendidas),0);
+  const comision=mias.reduce((a,x)=>a+x.comisionGanada,0);
+  const vendido=mias.reduce((a,x)=>a+x.valorVendido,0);
+
+  h+=head('Hola, '+USER.nombre.split(' ')[0], ROL[USER.rol]+' · '+esc(USER.cargo||''));
+  h+='<div class="grid2">';
+  if(puedeProducir(USER)){
+    h+=`<div class="stat acc"><div class="l">Horas trabajadas</div><div class="v">${num(totalH)}</div></div>
+        <div class="stat"><div class="l">Valor por horas</div><div class="v">${money(pagoH)}</div></div>`;
+  }
+  if(puedeVender(USER)){
+    h+=`<div class="stat"><div class="l">Empanadas pendientes</div><div class="v">${num(pend)}</div></div>
+        <div class="stat acc"><div class="l">Comisión acumulada</div><div class="v">${money(comision)}</div></div>`;
+  }
+  h+='</div>';
+  if(puedeVender(USER)){
+    h+=`<div class="card"><h3>Empanadas que tengo asignadas</h3>`;
+    const abiertas=mias.filter(a=>a.cantidad-a.vendidas>0);
+    h+= abiertas.length? abiertas.map(a=>{const p=producto(a.productoId);
+      return `<div class="row"><div class="g"><div class="t">${esc(p?p.nombre:'—')}</div><div class="s">${fechaHora(a.fecha)}</div></div><div class="n">${a.cantidad-a.vendidas}<small>de ${a.cantidad}</small></div></div>`}).join('')
+      : vacio('🛵','No tienes empanadas pendientes por vender.');
+    h+=`</div><div class="card"><h3>Mis ventas</h3>
+      <div class="row"><div class="g"><div class="t">Total vendido</div></div><div class="n">${money(vendido)}</div></div>
+      <div class="row"><div class="g"><div class="t">Mi comisión</div></div><div class="n" style="color:var(--terracota)">${money(comision)}</div></div></div>`;
+  }
+  return h;
+}
+
+/* =========================================================
+   INSUMOS
+   ========================================================= */
+function vInsumos(){
+  let h=head('Insumos','Materia prima en inventario',`<button class="btn sm" onclick="formInsumo()">＋ Insumo</button>`);
+  h+=`<button class="btn ghost wide" style="margin-bottom:12px" onclick="formEntrada()">📥 Registrar entrada de compra</button>`;
+  h+='<div class="card">';
+  h+= DB.insumos.length? DB.insumos.map(i=>{
+    const bajo=i.stock<=(i.minimo||0);
+    const pct=i.minimo? Math.min(100,(i.stock/(i.minimo*3))*100):100;
+    return `<div class="row"><div class="g">
+      <div class="t">${esc(i.nombre)} ${bajo?'<span class="pill r">bajo</span>':''}</div>
+      <div class="s">${money(i.precio)} por ${UNIC[i.unidad]} · en ${UNI[i.unidad]}</div>
+      <div class="bar"><i class="${bajo?'low':''}" style="width:${pct}%"></i></div>
+      </div><div class="n">${num(i.stock)}<small>${UNIC[i.unidad]}</small></div>
+      <button class="btn sm ghost" onclick="formInsumo(${i.id})">✎</button></div>`;
+  }).join('') : vacio('🌽','Crea tu primer insumo: masa, queso, carne, aceite, sal…');
+  h+='</div>';
+  const ent=DB.entradas.slice(-12).reverse();
+  h+=`<div class="card"><h3>Últimas entradas</h3>`;
+  h+= ent.length? ent.map(e=>{const i=insumo(e.insumoId);
+    return `<div class="row"><div class="g"><div class="t">${esc(i?i.nombre:'—')}</div><div class="s">${fechaHora(e.fecha)}</div></div>
+    <div class="n">+${num(e.cantidad)} ${i?UNIC[i.unidad]:''}<small>${money(e.cantidad*e.precio)}</small></div></div>`}).join('')
+    : vacio('📥','Sin entradas registradas.');
+  h+='</div>';
+  return h;
+}
+
+function formInsumo(id){
+  const i=id?insumo(id):null;
+  abrirModal(i?'Editar insumo':'Nuevo insumo',`
+  <div class="f"><label>Nombre del insumo</label><input id="iN" value="${i?esc(i.nombre):''}" placeholder="Masa de maíz"></div>
+  <div class="grid2">
+    <div class="f"><label>Se mide en</label><select id="iU">
+      <option value="g" ${i&&i.unidad=='g'?'selected':''}>Gramos (g)</option>
+      <option value="ml" ${i&&i.unidad=='ml'?'selected':''}>Mililitros (ml)</option>
+      <option value="und" ${i&&i.unidad=='und'?'selected':''}>Unidades</option></select></div>
+    <div class="f"><label>Precio por unidad</label><input id="iP" type="number" step="0.01" value="${i?i.precio:''}" placeholder="0"></div>
+  </div>
+  <div class="f"><label>Stock mínimo (aviso)</label><input id="iM" type="number" step="0.01" value="${i?(i.minimo||0):0}"></div>
+  ${i?'':'<div class="f"><label>Stock inicial</label><input id="iS" type="number" step="0.01" value="0"></div>'}
+  <button class="btn wide" onclick="guardarInsumo(${id||0})">Guardar insumo</button>
+  ${i?`<button class="btn wide ghost" style="margin-top:8px;border-color:var(--rojo);color:var(--rojo)" onclick="borrarInsumo(${i.id})">Eliminar insumo</button>`:''}`);
+}
+async function guardarInsumo(id){
+  const n=$('iN').value.trim(), u=$('iU').value, p=+$('iP').value||0, m=+$('iM').value||0;
+  if(!n) return toast('Escribe el nombre del insumo');
+  if(id){ const i=insumo(id); Object.assign(i,{nombre:n,unidad:u,precio:p,minimo:m}); }
+  else{
+    const s=+$('iS').value||0;
+    const nuevo={id:nid(),nombre:n,unidad:u,precio:p,minimo:m,stock:s};
+    DB.insumos.push(nuevo);
+    if(s>0) DB.entradas.push({id:nid(),insumoId:nuevo.id,cantidad:s,precio:p,fecha:new Date().toISOString(),nota:'Inventario inicial'});
+  }
+  await guardar(); cerrarModal(); render(); toast('Insumo guardado');
+}
+async function borrarInsumo(id){
+  if(DB.productos.some(p=>p.receta.some(r=>r.insumoId==id))) return toast('Ese insumo está en una receta');
+  DB.insumos=DB.insumos.filter(i=>i.id!=id); await guardar(); cerrarModal(); render(); toast('Insumo eliminado');
+}
+
+function formEntrada(){
+  if(!DB.insumos.length) return toast('Primero crea un insumo');
+  abrirModal('Entrada de insumo',`
+  <div class="f"><label>Insumo</label><select id="eI" onchange="pintaUni()">
+    ${DB.insumos.map(i=>`<option value="${i.id}">${esc(i.nombre)}</option>`).join('')}</select></div>
+  <div class="grid2">
+    <div class="f"><label>Cantidad <span id="eUni"></span></label><input id="eC" type="number" step="0.01" placeholder="0"></div>
+    <div class="f"><label>Precio por unidad</label><input id="eP" type="number" step="0.01" placeholder="0"></div>
+  </div>
+  <p style="font-size:12.5px;color:var(--tinta-3);margin:0 0 12px">Se suma al stock y queda registrado con fecha y hora.</p>
+  <button class="btn wide" onclick="guardarEntrada()">Registrar entrada</button>`);
+  pintaUni();
+}
+function pintaUni(){ const i=insumo($('eI').value); if(i){$('eUni').textContent='('+UNIC[i.unidad]+')'; $('eP').value=i.precio;} }
+async function guardarEntrada(){
+  const i=insumo($('eI').value), c=+$('eC').value||0, p=+$('eP').value||0;
+  if(!i||c<=0) return toast('Escribe una cantidad válida');
+  i.stock+=c; i.precio=p;
+  DB.entradas.push({id:nid(),insumoId:i.id,cantidad:c,precio:p,fecha:new Date().toISOString()});
+  await guardar(); cerrarModal(); render(); toast('Entrada registrada');
+}
+
+/* =========================================================
+   PRODUCTOS (recetas)
+   ========================================================= */
+function costoReceta(p){ return p.receta.reduce((a,r)=>{const i=insumo(r.insumoId); return a+(i?i.precio*r.cantidad:0)},0); }
+
+function vProductos(){
+  let h=head('Productos','Receta, precio de venta y comisión',`<button class="btn sm" onclick="formProducto()">＋ Producto</button>`);
+  h+= DB.productos.length? DB.productos.map(p=>{
+    const c=costoReceta(p), m=p.precio-c, pct=p.precio? (m/p.precio*100):0;
+    return `<div class="card">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px">
+        <div><div class="eyebrow">Producto</div><h3 style="font-size:18px">${esc(p.nombre)}</h3></div>
+        <button class="btn sm ghost" onclick="formProducto(${p.id})">✎ Editar</button>
+      </div>
+      <div class="grid3" style="margin:12px 0">
+        <div class="stat"><div class="l">Precio venta</div><div class="v" style="font-size:17px">${money(p.precio)}</div></div>
+        <div class="stat"><div class="l">Costo receta</div><div class="v" style="font-size:17px">${money(c)}</div></div>
+        <div class="stat"><div class="l">Comisión</div><div class="v" style="font-size:17px">${p.comision}%</div></div>
+      </div>
+      <div class="row"><div class="g"><div class="t">Margen por empanada</div><div class="s">${pct.toFixed(0)}% sobre el precio</div></div><div class="n" style="color:${m>0?'var(--verde)':'var(--rojo)'}">${money(m)}</div></div>
+      <div style="margin-top:8px"><div class="eyebrow">Receta por unidad</div>
+      ${p.receta.length? p.receta.map(r=>{const i=insumo(r.insumoId);
+        return `<div class="row"><div class="g"><div class="t">${esc(i?i.nombre:'—')}</div></div><div class="n">${num(r.cantidad)} ${i?UNIC[i.unidad]:''}<small>${money(i?i.precio*r.cantidad:0)}</small></div></div>`}).join('')
+        : '<p style="font-size:13px;color:var(--tinta-3)">Sin ingredientes definidos.</p>'}
+      </div></div>`;
+  }).join('') : `<div class="card">${vacio('🥟','Crea las empanadas de queso, carne y pollo con su receta.')}</div>`;
+  return h;
+}
+
+let recetaTmp=[];
+function formProducto(id){
+  const p=id?producto(id):null;
+  recetaTmp = p? p.receta.map(r=>({...r})) : [];
+  abrirModal(p?'Editar producto':'Nuevo producto',`
+  <div class="f"><label>Nombre del producto</label><input id="pN" value="${p?esc(p.nombre):''}" placeholder="Empanada de queso"></div>
+  <div class="grid2">
+    <div class="f"><label>Precio de venta</label><input id="pP" type="number" step="0.01" value="${p?p.precio:''}" placeholder="0"></div>
+    <div class="f"><label>Comisión vendedor (%)</label><input id="pC" type="number" step="0.1" value="${p?p.comision:0}" placeholder="0"></div>
+  </div>
+  <div class="eyebrow" style="margin-top:6px">Ingredientes por empanada</div>
+  <div id="recetaBox"></div>
+  <button class="btn sm ghost wide" style="margin:4px 0 10px" onclick="addReceta()">＋ Agregar ingrediente</button>
+  <div id="recetaTot"></div>
+  <button class="btn wide" onclick="guardarProducto(${id||0})">Guardar producto</button>
+  ${p?`<button class="btn wide ghost" style="margin-top:8px;border-color:var(--rojo);color:var(--rojo)" onclick="borrarProducto(${p.id})">Eliminar producto</button>`:''}`);
+  pintarReceta();
+}
+function addReceta(){ leerReceta(); recetaTmp.push({insumoId:DB.insumos[0]?DB.insumos[0].id:0,cantidad:0}); pintarReceta(); }
+function delReceta(i){ leerReceta(); recetaTmp.splice(i,1); pintarReceta(); }
+function leerReceta(){
+  recetaTmp.forEach((r,i)=>{ const s=$('rI'+i), c=$('rC'+i); if(s){r.insumoId=+s.value; r.cantidad=+c.value||0;} });
+}
+function pintarReceta(){
+  if(!DB.insumos.length){ $('recetaBox').innerHTML='<p style="font-size:13px;color:var(--tinta-3)">Primero crea insumos.</p>'; return; }
+  $('recetaBox').innerHTML=recetaTmp.map((r,i)=>`<div class="linea-item">
+    <div class="f"><label>Insumo</label><select id="rI${i}" onchange="leerReceta();pintarTot()">${DB.insumos.map(x=>`<option value="${x.id}" ${x.id==r.insumoId?'selected':''}>${esc(x.nombre)} (${UNIC[x.unidad]})</option>`).join('')}</select></div>
+    <div class="f" style="max-width:110px"><label>Cantidad</label><input id="rC${i}" type="number" step="0.01" value="${r.cantidad}" oninput="leerReceta();pintarTot()"></div>
+    <button class="del" onclick="delReceta(${i})">×</button></div>`).join('');
+  pintarTot();
+}
+function pintarTot(){
+  const c=recetaTmp.reduce((a,r)=>{const i=insumo(r.insumoId);return a+(i?i.precio*r.cantidad:0)},0);
+  const pv=+($('pP')?$('pP').value:0)||0;
+  $('recetaTot').innerHTML=`<div class="tot"><div class="l">Costo de ingredientes<b>${money(c)}</b></div>
+  <div class="l">Precio de venta<b>${money(pv)}</b></div>
+  <div class="l big">Margen<b>${money(pv-c)}</b></div></div>`;
+}
+async function guardarProducto(id){
+  leerReceta();
+  const n=$('pN').value.trim(), pv=+$('pP').value||0, com=+$('pC').value||0;
+  if(!n) return toast('Escribe el nombre del producto');
+  const receta=recetaTmp.filter(r=>r.insumoId&&r.cantidad>0);
+  if(id){ Object.assign(producto(id),{nombre:n,precio:pv,comision:com,receta}); }
+  else{ const np={id:nid(),nombre:n,precio:pv,comision:com,receta}; DB.productos.push(np); DB.stockProd[np.id]=0; }
+  await guardar(); cerrarModal(); render(); toast('Producto guardado');
+}
+async function borrarProducto(id){
+  DB.productos=DB.productos.filter(p=>p.id!=id); delete DB.stockProd[id];
+  await guardar(); cerrarModal(); render(); toast('Producto eliminado');
+}
+
+/* =========================================================
+   PRODUCCIÓN
+   ========================================================= */
+function vProduccion(){
+  let h=head('Producción','Lotes del día y su costo real',`<button class="btn sm" onclick="formLote()">＋ Lote</button>`);
+  const ls=[...DB.lotes].reverse();
+  h+= ls.length? ls.map(l=>{
+    const und=l.producidos.reduce((a,x)=>a+x.cantidad,0);
+    return `<div class="card">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start">
+        <div><div class="eyebrow">Lote #${l.id}</div><h3>${fecha(l.fecha)}</h3></div>
+        <span class="pill t">${num(und)} empanadas</span>
+      </div>
+      <div class="sello"><div class="l">Costo por empanada</div><div class="v">${money(und? l.costoTotal/und:0)}</div><div class="s">promedio del lote</div></div>
+      <div class="tot">
+        <div class="l">Insumos<b>${money(l.costoInsumos)}</b></div>
+        <div class="l">Mano de obra<b>${money(l.costoMano)}</b></div>
+        <div class="l big">Costo total<b>${money(l.costoTotal)}</b></div>
+      </div>
+      <div class="eyebrow">Producido</div>
+      ${l.producidos.map(x=>{const p=producto(x.productoId);
+        return `<div class="row"><div class="g"><div class="t">${esc(p?p.nombre:'—')}</div><div class="s">costo unitario ${money(x.costoUnit)} · venta ${money(p?p.precio:0)}</div></div><div class="n">${num(x.cantidad)}<small>unidades</small></div></div>`}).join('')}
+      <div class="eyebrow" style="margin-top:10px">Quién trabajó</div>
+      ${l.mano.length? l.mano.map(m=>{const u=usuario(m.empleadoId);
+        return `<div class="row"><div class="g"><div class="t">${esc(u?u.nombre:'—')}</div><div class="s">${money(m.valorHora)} por hora</div></div><div class="n">${num(m.horas)} h<small>${money(m.horas*m.valorHora)}</small></div></div>`}).join('')
+        : '<p style="font-size:13px;color:var(--tinta-3)">Sin mano de obra registrada.</p>'}
+      <div class="eyebrow" style="margin-top:10px">Insumos consumidos</div>
+      ${l.consumos.map(c=>{const i=insumo(c.insumoId);
+        return `<div class="row"><div class="g"><div class="t">${esc(i?i.nombre:'—')}</div></div><div class="n">${num(c.cantidad)} ${i?UNIC[i.unidad]:''}<small>${money(c.cantidad*c.precio)}</small></div></div>`}).join('')}
+    </div>`;
+  }).join('') : `<div class="card">${vacio('🔥','Registra el primer lote de producción del día.')}</div>`;
+  return h;
+}
+
+let cTmp=[], pTmp=[], mTmp=[];
+function formLote(){
+  if(!DB.productos.length) return toast('Primero crea los productos');
+  cTmp=[]; pTmp=[]; mTmp=[];
+  abrirModal('Nuevo lote de producción',`
+  <div class="f"><label>Fecha del lote</label><input id="lF" type="date" value="${hoy()}"></div>
+
+  <div class="eyebrow">1 · Empanadas producidas</div>
+  <div id="pBox"></div>
+  <button class="btn sm ghost wide" style="margin:4px 0 14px" onclick="addProd()">＋ Agregar producto</button>
+
+  <div class="eyebrow">2 · Insumos que se usaron</div>
+  <div id="cBox"></div>
+  <div class="grid2" style="gap:8px;margin:4px 0 14px">
+    <button class="btn sm ghost" onclick="addCons()">＋ Insumo</button>
+    <button class="btn sm dark" onclick="cargarRecetas()">Cargar según receta</button>
+  </div>
+
+  <div class="eyebrow">3 · Quién trabajó y cuántas horas</div>
+  <div id="mBox"></div>
+  <button class="btn sm ghost wide" style="margin:4px 0 10px" onclick="addMano()">＋ Persona</button>
+
+  <div id="loteTot"></div>
+  <button class="btn wide" onclick="guardarLote()">Cerrar lote y descontar inventario</button>`);
+  addProd(); pintarLote();
+}
+function leerLote(){
+  pTmp.forEach((x,i)=>{const s=$('pP'+i);if(s){x.productoId=+s.value;x.cantidad=+$('pQ'+i).value||0}});
+  cTmp.forEach((x,i)=>{const s=$('cI'+i);if(s){x.insumoId=+s.value;x.cantidad=+$('cQ'+i).value||0}});
+  mTmp.forEach((x,i)=>{const s=$('mE'+i);if(s){x.empleadoId=+s.value;x.horas=+$('mH'+i).value||0}});
+}
+function addProd(){leerLote();pTmp.push({productoId:DB.productos[0].id,cantidad:0});pintarLote()}
+function delProd(i){leerLote();pTmp.splice(i,1);pintarLote()}
+function addCons(){if(!DB.insumos.length)return toast('No hay insumos');leerLote();cTmp.push({insumoId:DB.insumos[0].id,cantidad:0});pintarLote()}
+function delCons(i){leerLote();cTmp.splice(i,1);pintarLote()}
+function addMano(){const e=DB.usuarios.filter(u=>puedeProducir(u));if(!e.length)return toast('No hay empleados de producción');leerLote();mTmp.push({empleadoId:e[0].id,horas:0});pintarLote()}
+function delMano(i){leerLote();mTmp.splice(i,1);pintarLote()}
+
+function cargarRecetas(){
+  leerLote();
+  const map={};
+  pTmp.forEach(x=>{const p=producto(x.productoId); if(!p)return;
+    p.receta.forEach(r=>{ map[r.insumoId]=(map[r.insumoId]||0)+r.cantidad*x.cantidad; })});
+  cTmp=Object.keys(map).map(k=>({insumoId:+k,cantidad:Math.round(map[k]*100)/100}));
+  pintarLote(); toast('Insumos cargados desde las recetas');
+}
+
+function pintarLote(){
+  const emp=DB.usuarios.filter(u=>puedeProducir(u));
+  $('pBox').innerHTML=pTmp.map((x,i)=>`<div class="linea-item">
+    <div class="f"><label>Producto</label><select id="pP${i}" onchange="leerLote();pintarLoteTot()">${DB.productos.map(p=>`<option value="${p.id}" ${p.id==x.productoId?'selected':''}>${esc(p.nombre)}</option>`).join('')}</select></div>
+    <div class="f" style="max-width:105px"><label>Unidades</label><input id="pQ${i}" type="number" value="${x.cantidad}" oninput="leerLote();pintarLoteTot()"></div>
+    <button class="del" onclick="delProd(${i})">×</button></div>`).join('');
+  $('cBox').innerHTML=cTmp.length? cTmp.map((x,i)=>{const ins=insumo(x.insumoId);
+    return `<div class="linea-item">
+    <div class="f"><label>Insumo <span style="color:var(--terracota)">disp. ${ins?num(ins.stock)+' '+UNIC[ins.unidad]:''}</span></label>
+      <select id="cI${i}" onchange="leerLote();pintarLote()">${DB.insumos.map(s=>`<option value="${s.id}" ${s.id==x.insumoId?'selected':''}>${esc(s.nombre)} (${UNIC[s.unidad]})</option>`).join('')}</select></div>
+    <div class="f" style="max-width:105px"><label>Cantidad</label><input id="cQ${i}" type="number" step="0.01" value="${x.cantidad}" oninput="leerLote();pintarLoteTot()"></div>
+    <button class="del" onclick="delCons(${i})">×</button></div>`}).join('')
+    : '<p style="font-size:13px;color:var(--tinta-3);margin:0 0 6px">Agrega los insumos o cárgalos desde la receta.</p>';
+  $('mBox').innerHTML=mTmp.length? mTmp.map((x,i)=>`<div class="linea-item">
+    <div class="f"><label>Empleado</label><select id="mE${i}" onchange="leerLote();pintarLoteTot()">${emp.map(e=>`<option value="${e.id}" ${e.id==x.empleadoId?'selected':''}>${esc(e.nombre)}</option>`).join('')}</select></div>
+    <div class="f" style="max-width:105px"><label>Horas</label><input id="mH${i}" type="number" step="0.25" value="${x.horas}" oninput="leerLote();pintarLoteTot()"></div>
+    <button class="del" onclick="delMano(${i})">×</button></div>`).join('')
+    : '<p style="font-size:13px;color:var(--tinta-3);margin:0 0 6px">Agrega quiénes trabajaron en este lote.</p>';
+  pintarLoteTot();
+}
+function calcLote(){
+  const ci=cTmp.reduce((a,x)=>{const i=insumo(x.insumoId);return a+(i?i.precio*x.cantidad:0)},0);
+  const cm=mTmp.reduce((a,x)=>{const u=usuario(x.empleadoId);return a+((u?u.vhProd:0)*x.horas)},0);
+  const und=pTmp.reduce((a,x)=>a+x.cantidad,0);
+  return {ci,cm,total:ci+cm,und,unit:und?(ci+cm)/und:0};
+}
+function pintarLoteTot(){
+  const c=calcLote();
+  $('loteTot').innerHTML=`<div class="tot">
+    <div class="l">Costo de insumos<b>${money(c.ci)}</b></div>
+    <div class="l">Mano de obra<b>${money(c.cm)}</b></div>
+    <div class="l">Empanadas producidas<b>${num(c.und)}</b></div>
+    <div class="l big">Costo por empanada<b>${money(c.unit)}</b></div></div>`;
+}
+async function guardarLote(){
+  leerLote();
+  const prods=pTmp.filter(x=>x.cantidad>0);
+  if(!prods.length) return toast('Registra cuántas empanadas salieron');
+  const cons=cTmp.filter(x=>x.cantidad>0);
+  for(const c of cons){ const i=insumo(c.insumoId);
+    if(i.stock<c.cantidad) return toast('No hay suficiente '+i.nombre+' en inventario'); }
+  const c=calcLote();
+  // reparto de costo por producto, ponderado por el costo de su receta
+  const pesos=prods.map(x=>{const p=producto(x.productoId); const cr=p?costoReceta(p):0; return (cr>0?cr:1)*x.cantidad;});
+  const sumaPesos=pesos.reduce((a,b)=>a+b,0)||1;
+  const producidos=prods.map((x,k)=>{
+    const parte=c.total*(pesos[k]/sumaPesos);
+    return {productoId:x.productoId,cantidad:x.cantidad,costoUnit:Math.round(parte/x.cantidad)};
+  });
+  cons.forEach(x=>{ insumo(x.insumoId).stock-=x.cantidad; });
+  prods.forEach(x=>{ DB.stockProd[x.productoId]=(DB.stockProd[x.productoId]||0)+x.cantidad; });
+  DB.lotes.push({
+    id:nid(), fecha:$('lF').value||hoy(), creado:new Date().toISOString(),
+    consumos:cons.map(x=>({...x,precio:insumo(x.insumoId).precio})),
+    producidos,
+    mano:mTmp.filter(x=>x.horas>0).map(x=>({empleadoId:x.empleadoId,horas:x.horas,valorHora:usuario(x.empleadoId).vhProd||0})),
+    costoInsumos:c.ci, costoMano:c.cm, costoTotal:c.total
+  });
+  await guardar(); cerrarModal(); render(); toast('Lote cerrado · inventario actualizado');
+}
+
+/* =========================================================
+   INVENTARIO PRODUCTO TERMINADO
+   ========================================================= */
+function vInventario(){
+  let h=head('Bodega','Empanadas listas para vender',`<button class="btn sm ghost" onclick="formAjuste()">Ajustar</button>`);
+  const tot=Object.values(DB.stockProd).reduce((a,b)=>a+b,0);
+  const valor=DB.productos.reduce((a,p)=>a+stockDe(p.id)*p.precio,0);
+  h+=`<div class="grid2">
+    <div class="stat acc"><div class="l">Total en bodega</div><div class="v">${num(tot)}</div></div>
+    <div class="stat"><div class="l">Valor a precio de venta</div><div class="v">${money(valor)}</div></div></div>`;
+  h+='<div class="card"><h3>Existencias por producto</h3>';
+  h+= DB.productos.length? DB.productos.map(p=>`<div class="row"><div class="g"><div class="t">${esc(p.nombre)}</div><div class="s">${money(p.precio)} c/u</div></div><div class="n">${num(stockDe(p.id))}<small>unidades</small></div></div>`).join('') : vacio('📦','No hay productos creados.');
+  h+='</div>';
+  return h;
+}
+function formAjuste(){
+  if(!DB.productos.length) return toast('Primero crea productos');
+  abrirModal('Ajustar inventario',`
+  <p style="font-size:13px;color:var(--tinta-3);margin:0 0 14px">Úsalo para cargar el inventario inicial o corregir un conteo.</p>
+  ${DB.productos.map(p=>`<div class="f"><label>${esc(p.nombre)}</label><input id="aj${p.id}" type="number" value="${stockDe(p.id)}"></div>`).join('')}
+  <button class="btn wide" onclick="guardarAjuste()">Guardar existencias</button>`);
+}
+async function guardarAjuste(){
+  DB.productos.forEach(p=>{ DB.stockProd[p.id]=+$('aj'+p.id).value||0; });
+  await guardar(); cerrarModal(); render(); toast('Inventario actualizado');
+}
+
+/* =========================================================
+   EMPLEADOS / USUARIOS
+   ========================================================= */
+function vEmpleados(){
+  let h=head('Equipo','Empleados, roles y acceso al sistema',`<button class="btn sm" onclick="formEmpleado()">＋ Persona</button>`);
+  h+='<div class="card">';
+  h+=DB.usuarios.map(u=>{
+    const horas=DB.lotes.flatMap(l=>l.mano.filter(m=>m.empleadoId==u.id));
+    const th=horas.reduce((a,x)=>a+x.horas,0), pago=horas.reduce((a,x)=>a+x.horas*x.valorHora,0);
+    const com=DB.asignaciones.filter(a=>a.vendedorId==u.id).reduce((a,x)=>a+x.comisionGanada,0);
+    const pill={admin:'a',produccion:'t',vendedor:'v',ambos:'t'}[u.rol];
+    return `<div class="row"><div class="g">
+      <div class="t">${esc(u.nombre)} <span class="pill ${pill}">${ROL[u.rol]}</span></div>
+      <div class="s">${esc(u.cargo||'')} · usuario: ${esc(u.usuario)}</div>
+      <div class="s">${th>0?num(th)+' h · '+money(pago):''}${com>0?' · comisión '+money(com):''}</div>
+      </div><button class="btn sm ghost" onclick="formEmpleado(${u.id})">✎</button></div>`;
+  }).join('');
+  h+='</div>';
+  return h;
+}
+function formEmpleado(id){
+  const u=id?usuario(id):null;
+  abrirModal(u?'Editar persona':'Nueva persona',`
+  <div class="f"><label>Nombre completo</label><input id="uN" value="${u?esc(u.nombre):''}" placeholder="María Gómez"></div>
+  <div class="f"><label>Cargo</label><input id="uC" value="${u?esc(u.cargo||''):''}" placeholder="Socia · producción y ventas"></div>
+  <div class="f"><label>Función en la empresa</label><select id="uR" onchange="camposRol()">
+    <option value="produccion" ${u&&u.rol=='produccion'?'selected':''}>Producción</option>
+    <option value="vendedor" ${u&&u.rol=='vendedor'?'selected':''}>Vendedor</option>
+    <option value="ambos" ${u&&u.rol=='ambos'?'selected':''}>Producción y ventas</option>
+    <option value="admin" ${u&&u.rol=='admin'?'selected':''}>Administrador</option></select></div>
+  <div class="grid2" id="valores">
+    <div class="f" id="fvp"><label>Valor hora producción</label><input id="uVP" type="number" value="${u?u.vhProd||0:0}"></div>
+    <div class="f" id="fvc"><label>Valor hora ventas</label><input id="uVC" type="number" value="${u?u.vhCom||0:0}"></div>
+  </div>
+  <div class="grid2">
+    <div class="f"><label>Usuario</label><input id="uU" value="${u?esc(u.usuario):''}" autocapitalize="none" placeholder="maria"></div>
+    <div class="f"><label>Contraseña</label><input id="uP" value="${u?esc(u.clave):''}" placeholder="clave"></div>
+  </div>
+  <button class="btn wide" onclick="guardarEmpleado(${id||0})">Guardar persona</button>
+  ${u&&u.id!=1?`<button class="btn wide ghost" style="margin-top:8px;border-color:var(--rojo);color:var(--rojo)" onclick="borrarEmpleado(${u.id})">Eliminar</button>`:''}`);
+  camposRol();
+}
+function camposRol(){
+  const r=$('uR').value;
+  $('fvp').style.display=(r=='produccion'||r=='ambos')?'block':'none';
+  $('fvc').style.display=(r=='vendedor'||r=='ambos')?'block':'none';
+}
+async function guardarEmpleado(id){
+  const n=$('uN').value.trim(), us=$('uU').value.trim(), cl=$('uP').value.trim();
+  if(!n||!us||!cl) return toast('Falta nombre, usuario o contraseña');
+  if(DB.usuarios.some(x=>x.usuario.toLowerCase()===us.toLowerCase()&&x.id!=id)) return toast('Ese usuario ya existe');
+  const d={nombre:n,cargo:$('uC').value.trim(),rol:$('uR').value,vhProd:+$('uVP').value||0,vhCom:+$('uVC').value||0,usuario:us,clave:cl,activo:true};
+  if(id) Object.assign(usuario(id),d); else DB.usuarios.push({id:nid(),...d});
+  await guardar(); cerrarModal(); render(); toast('Persona guardada');
+}
+async function borrarEmpleado(id){
+  DB.usuarios=DB.usuarios.filter(u=>u.id!=id); await guardar(); cerrarModal(); render(); toast('Persona eliminada');
+}
+
+/* =========================================================
+   VENTAS / COMERCIAL
+   ========================================================= */
+function vVentas(){
+  let h=head('Ventas','Asignaciones a vendedores y comisiones',`<button class="btn sm" onclick="formAsignar()">＋ Asignar</button>`);
+  const pend=DB.asignaciones.reduce((a,x)=>a+(x.cantidad-x.vendidas),0);
+  const vend=DB.asignaciones.reduce((a,x)=>a+x.valorVendido,0);
+  const com=DB.asignaciones.reduce((a,x)=>a+x.comisionGanada,0);
+  h+=`<div class="grid3">
+    <div class="stat"><div class="l">Pendientes</div><div class="v">${num(pend)}</div></div>
+    <div class="stat acc"><div class="l">Vendido</div><div class="v" style="font-size:17px">${money(vend)}</div></div>
+    <div class="stat"><div class="l">Comisiones</div><div class="v" style="font-size:17px">${money(com)}</div></div></div>`;
+
+  h+='<div class="card"><h3>Por vendedor</h3>';
+  const vs=DB.usuarios.filter(u=>puedeVender(u));
+  h+= vs.length? vs.map(v=>{
+    const a=DB.asignaciones.filter(x=>x.vendedorId==v.id);
+    const p=a.reduce((s,x)=>s+(x.cantidad-x.vendidas),0);
+    const c=a.reduce((s,x)=>s+x.comisionGanada,0);
+    return `<div class="row"><div class="g"><div class="t">${esc(v.nombre)}</div><div class="s">${p} pendientes por vender</div></div><div class="n">${money(c)}<small>comisión</small></div></div>`;
+  }).join('') : vacio('👥','No hay vendedores registrados.');
+  h+='</div>';
+
+  h+='<div class="card"><h3>Asignaciones</h3>';
+  const as=[...DB.asignaciones].reverse();
+  h+= as.length? as.map(a=>{
+    const p=producto(a.productoId), v=usuario(a.vendedorId), rest=a.cantidad-a.vendidas;
+    return `<div class="row"><div class="g">
+      <div class="t">${esc(p?p.nombre:'—')} ${rest>0?'<span class="pill a">pendiente</span>':'<span class="pill v">vendido</span>'}</div>
+      <div class="s">${esc(v?v.nombre:'—')} · ${fechaHora(a.fecha)}</div>
+      ${a.cliente?`<div class="s">Cliente: ${esc(a.cliente)} (${esc(a.tipoCliente||'')})</div>`:''}
+      </div><div class="n">${a.vendidas}/${a.cantidad}<small>${money(a.comisionGanada)}</small></div>
+      ${rest>0?`<button class="btn sm" onclick="formVenta(${a.id})">Vender</button>`:''}</div>`;
+  }).join('') : vacio('🛵','Asigna empanadas a un vendedor para empezar.');
+  h+='</div>';
+  return h;
+}
+function formAsignar(){
+  const vs=DB.usuarios.filter(u=>puedeVender(u));
+  if(!vs.length) return toast('Primero crea un vendedor');
+  if(!DB.productos.length) return toast('Primero crea productos');
+  abrirModal('Asignar empanadas a un vendedor',`
+  <div class="f"><label>Vendedor</label><select id="aV">${vs.map(v=>`<option value="${v.id}">${esc(v.nombre)}</option>`).join('')}</select></div>
+  <div class="f"><label>Producto</label><select id="aP" onchange="pintaDisp()">${DB.productos.map(p=>`<option value="${p.id}">${esc(p.nombre)}</option>`).join('')}</select></div>
+  <div class="f"><label>Cantidad <span id="aDisp" style="color:var(--terracota)"></span></label><input id="aQ" type="number" placeholder="0"></div>
+  <p style="font-size:12.5px;color:var(--tinta-3);margin:0 0 12px">Se descuenta de la bodega y queda como pendiente del vendedor.</p>
+  <button class="btn wide" onclick="guardarAsignacion()">Asignar</button>`);
+  pintaDisp();
+}
+function pintaDisp(){ const p=producto($('aP').value); $('aDisp').textContent=p?'· disponible '+num(stockDe(p.id)):''; }
+async function guardarAsignacion(){
+  const v=+$('aV').value, p=producto($('aP').value), q=+$('aQ').value||0;
+  if(q<=0) return toast('Escribe la cantidad');
+  if(stockDe(p.id)<q) return toast('No hay suficientes en bodega');
+  DB.stockProd[p.id]-=q;
+  DB.asignaciones.push({id:nid(),vendedorId:v,productoId:p.id,cantidad:q,vendidas:0,
+    valorVendido:0,comisionGanada:0,cliente:'',tipoCliente:'',fecha:new Date().toISOString()});
+  await guardar(); cerrarModal(); render(); toast('Asignación registrada');
+}
+function formVenta(id){
+  const a=DB.asignaciones.find(x=>x.id==id); window.__asig=a;
+  const p=producto(a.productoId), rest=a.cantidad-a.vendidas;
+  abrirModal('Registrar venta',`
+  <div class="card" style="margin-bottom:14px;box-shadow:none">
+    <div class="row"><div class="g"><div class="t">${esc(p.nombre)}</div><div class="s">${money(p.precio)} c/u · comisión ${p.comision}%</div></div><div class="n">${rest}<small>pendientes</small></div></div></div>
+  <div class="f"><label>Cantidad vendida</label><input id="vQ" type="number" value="${rest}" oninput="pintaVenta()"></div>
+  <div class="grid2">
+    <div class="f"><label>Cliente</label><input id="vC" value="${esc(a.cliente)}" placeholder="Tienda La Esquina"></div>
+    <div class="f"><label>Tipo de cliente</label><select id="vT">
+      <option value="Tienda">Tienda</option><option value="Distribuidor">Distribuidor</option>
+      <option value="Consumidor final">Consumidor final</option><option value="Evento">Evento</option></select></div>
+  </div>
+  <div id="vTot"></div>
+  <button class="btn wide" onclick="guardarVenta(${id})">Registrar venta</button>`);
+  pintaVenta();
+}
+function pintaVenta(){
+  const q=+$('vQ').value||0;
+  const asig=window.__asig; if(!asig) return;
+  const p=producto(asig.productoId);
+  const total=q*p.precio, com=total*(p.comision/100);
+  $('vTot').innerHTML=`<div class="tot">
+    <div class="l">Precio unitario<b>${money(p.precio)}</b></div>
+    <div class="l">Total de la venta<b>${money(total)}</b></div>
+    <div class="l big">Comisión del vendedor<b>${money(com)}</b></div></div>`;
+}
+async function guardarVenta(id){
+  const a=DB.asignaciones.find(x=>x.id==id), p=producto(a.productoId);
+  const q=+$('vQ').value||0, rest=a.cantidad-a.vendidas;
+  if(q<=0||q>rest) return toast('Cantidad inválida (máx. '+rest+')');
+  a.vendidas+=q;
+  a.valorVendido+=q*p.precio;
+  a.comisionGanada+=q*p.precio*(p.comision/100);
+  a.cliente=$('vC').value.trim(); a.tipoCliente=$('vT').value;
+  await guardar(); cerrarModal(); render(); toast('Venta registrada');
+}
+
+/* =========================================================
+   REPORTES
+   ========================================================= */
+function vReportes(){
+  let h=head('Reportes','Costos, consumo y desempeño');
+  const totProd=DB.lotes.reduce((a,l)=>a+l.producidos.reduce((s,x)=>s+x.cantidad,0),0);
+  const totCosto=DB.lotes.reduce((a,l)=>a+l.costoTotal,0);
+  const totVenta=DB.asignaciones.reduce((a,x)=>a+x.valorVendido,0);
+  const totCom=DB.asignaciones.reduce((a,x)=>a+x.comisionGanada,0);
+  h+=`<div class="grid2">
+    <div class="stat"><div class="l">Producido histórico</div><div class="v">${num(totProd)}</div></div>
+    <div class="stat"><div class="l">Costo acumulado</div><div class="v" style="font-size:17px">${money(totCosto)}</div></div>
+    <div class="stat"><div class="l">Vendido</div><div class="v" style="font-size:17px">${money(totVenta)}</div></div>
+    <div class="stat acc"><div class="l">Utilidad estimada</div><div class="v" style="font-size:17px">${money(totVenta-totCosto-totCom)}</div></div></div>`;
+
+  h+='<div class="card"><h3>Costo promedio por producto</h3>';
+  h+= DB.productos.map(p=>{
+    const ls=DB.lotes.flatMap(l=>l.producidos.filter(x=>x.productoId==p.id));
+    const u=ls.reduce((a,x)=>a+x.cantidad,0);
+    const c=ls.reduce((a,x)=>a+x.cantidad*x.costoUnit,0);
+    const prom=u?c/u:costoReceta(p);
+    return `<div class="row"><div class="g"><div class="t">${esc(p.nombre)}</div><div class="s">venta ${money(p.precio)} · ${u} producidas</div></div><div class="n">${money(prom)}<small>costo unitario</small></div></div>`;
+  }).join('')||vacio('📊','Sin datos.');
+  h+='</div>';
+
+  h+='<div class="card"><h3>Consumo de insumos</h3>';
+  const cons={};
+  DB.lotes.forEach(l=>l.consumos.forEach(c=>{cons[c.insumoId]=(cons[c.insumoId]||0)+c.cantidad}));
+  const ks=Object.keys(cons);
+  h+= ks.length? ks.map(k=>{const i=insumo(k);
+    return `<div class="row"><div class="g"><div class="t">${esc(i?i.nombre:'—')}</div><div class="s">quedan ${i?num(i.stock)+' '+UNIC[i.unidad]:''}</div></div><div class="n">${num(cons[k])} ${i?UNIC[i.unidad]:''}<small>${money(cons[k]*(i?i.precio:0))}</small></div></div>`}).join('')
+    : vacio('🌽','Sin consumo registrado.');
+  h+='</div>';
+
+  h+='<div class="card"><h3>Horas y pagos por empleado</h3>';
+  const emp=DB.usuarios.filter(u=>puedeProducir(u));
+  h+= emp.length? emp.map(u=>{
+    const m=DB.lotes.flatMap(l=>l.mano.filter(x=>x.empleadoId==u.id));
+    const th=m.reduce((a,x)=>a+x.horas,0), pg=m.reduce((a,x)=>a+x.horas*x.valorHora,0);
+    return `<div class="row"><div class="g"><div class="t">${esc(u.nombre)}</div><div class="s">${money(u.vhProd)} por hora</div></div><div class="n">${num(th)} h<small>${money(pg)}</small></div></div>`;
+  }).join('') : vacio('👥','Sin empleados de producción.');
+  h+='</div>';
+  return h;
+}
+
+/* =========================================================
+   VISTAS DE EMPLEADO
+   ========================================================= */
+function vMisHoras(){
+  const filas=DB.lotes.flatMap(l=>l.mano.filter(m=>m.empleadoId==USER.id).map(m=>({...m,lote:l})));
+  const th=filas.reduce((a,x)=>a+x.horas,0), pg=filas.reduce((a,x)=>a+x.horas*x.valorHora,0);
+  let h=head('Mis horas','Trabajo registrado en producción');
+  h+=`<div class="grid2">
+    <div class="stat"><div class="l">Horas totales</div><div class="v">${num(th)}</div></div>
+    <div class="stat acc"><div class="l">Valor acumulado</div><div class="v" style="font-size:18px">${money(pg)}</div></div></div>`;
+  h+='<div class="card"><h3>Detalle por lote</h3>';
+  h+= filas.length? [...filas].reverse().map(f=>`<div class="row"><div class="g"><div class="t">Lote #${f.lote.id}</div><div class="s">${fecha(f.lote.fecha)} · ${money(f.valorHora)}/hora</div></div><div class="n">${num(f.horas)} h<small>${money(f.horas*f.valorHora)}</small></div></div>`).join('')
+    : vacio('⏱️','Todavía no tienes horas registradas.');
+  h+='</div>';
+  return h;
+}
+function vMisVentas(){
+  const mias=DB.asignaciones.filter(a=>a.vendedorId==USER.id);
+  const pend=mias.reduce((a,x)=>a+(x.cantidad-x.vendidas),0);
+  const vend=mias.reduce((a,x)=>a+x.valorVendido,0);
+  const com=mias.reduce((a,x)=>a+x.comisionGanada,0);
+  let h=head('Mis ventas','Lo que tengo asignado y mi comisión');
+  h+=`<div class="grid3">
+    <div class="stat"><div class="l">Pendientes</div><div class="v">${num(pend)}</div></div>
+    <div class="stat"><div class="l">Vendido</div><div class="v" style="font-size:16px">${money(vend)}</div></div>
+    <div class="stat acc"><div class="l">Comisión</div><div class="v" style="font-size:16px">${money(com)}</div></div></div>`;
+  h+='<div class="card"><h3>Mis asignaciones</h3>';
+  h+= mias.length? [...mias].reverse().map(a=>{const p=producto(a.productoId),r=a.cantidad-a.vendidas;
+    return `<div class="row"><div class="g"><div class="t">${esc(p?p.nombre:'—')} ${r>0?'<span class="pill a">pendiente</span>':'<span class="pill v">vendido</span>'}</div>
+    <div class="s">${fechaHora(a.fecha)}${a.cliente?' · '+esc(a.cliente):''}</div></div>
+    <div class="n">${a.vendidas}/${a.cantidad}<small>${money(a.comisionGanada)}</small></div></div>`}).join('')
+    : vacio('🛵','No tienes empanadas asignadas.');
+  h+='</div>';
+  return h;
+}
+</script>
+</body>
+</html>
