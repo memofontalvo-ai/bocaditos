@@ -3,6 +3,9 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<meta http-equiv="Pragma" content="no-cache">
+<meta http-equiv="Expires" content="0">
 <title>Bocaditos — Gestión de producción y ventas</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -207,7 +210,7 @@ label{display:block;font-size:11.5px;font-weight:900;text-transform:uppercase;le
     <div id="loginErr"></div>
     <button type="submit">Entrar</button>
   </form>
-  <div class="hint"><b style="color:#C9B79C">Versión 1.2</b> · <span id="estado">Conectando…</span><br><br>Primer ingreso — administrador<br><b>admin</b> / <b>admin123</b></div>
+  <div class="hint"><b style="color:#C9B79C">Versión 1.3</b> · <span id="estado">Conectando…</span><br><br>Primer ingreso — administrador<br><b>admin</b> / <b>admin123</b></div>
   <div class="spark">✦</div>
 </div>
 
@@ -216,7 +219,7 @@ label{display:block;font-size:11.5px;font-weight:900;text-transform:uppercase;le
   <header>
     <div class="mark wordmark">Bocaditos</div>
     <div style="display:flex;align-items:center;gap:10px">
-      <div class="who"><b id="hName"></b><span id="hRol"></span><span style="color:#6B5A48">v1.2</span></div>
+      <div class="who"><b id="hName"></b><span id="hRol"></span><span style="color:#6B5A48">v1.3</span></div>
       <button class="out" onclick="salir()">Salir</button>
     </div>
   </header>
@@ -308,6 +311,7 @@ const insumo=id=>DB.insumos.find(i=>i.id==id);
 const producto=id=>DB.productos.find(p=>p.id==id);
 const usuario=id=>DB.usuarios.find(u=>u.id==id);
 const stockDe=id=>DB.stockProd[id]||0;
+const costoProm=id=>(DB.costoProd&&DB.costoProd[id])||0;
 const puedeProducir=u=>u&&(u.rol==='produccion'||u.rol==='ambos'||u.rol==='admin');
 const puedeVender=u=>u&&(u.rol==='vendedor'||u.rol==='ambos'||u.rol==='admin');
 
@@ -622,13 +626,13 @@ function vProduccion(){
   let h=head('Producción','Lotes del día y su costo real',`<button class="btn sm" onclick="formLote()">＋ Lote</button>`);
   const ls=[...DB.lotes].reverse();
   h+= ls.length? ls.map(l=>{
-    const und=l.producidos.reduce((a,x)=>a+x.cantidad,0);
+    const paq=l.producidos.reduce((a,x)=>a+x.cantidad,0);
     return `<div class="card">
       <div style="display:flex;justify-content:space-between;align-items:flex-start">
         <div><div class="eyebrow">Lote #${l.id}</div><h3>${fecha(l.fecha)}</h3></div>
-        <span class="pill t">${num(und)} empanadas</span>
+        <span class="pill t">${num(paq)} paquetes</span>
       </div>
-      <div class="sello"><div class="l">Costo por empanada</div><div class="v">${money(und? l.costoTotal/und:0)}</div><div class="s">promedio del lote</div></div>
+      <div class="sello"><div class="l">Costo del lote</div><div class="v">${money(l.costoTotal)}</div><div class="s">${num(paq*10)} empanadas</div></div>
       <div class="tot">
         <div class="l">Insumos<b>${money(l.costoInsumos)}</b></div>
         <div class="l">Mano de obra<b>${money(l.costoMano)}</b></div>
@@ -636,14 +640,14 @@ function vProduccion(){
       </div>
       <div class="eyebrow">Producido</div>
       ${l.producidos.map(x=>{const p=producto(x.productoId);
-        return `<div class="row"><div class="g"><div class="t">${esc(p?p.nombre:'—')}</div><div class="s">costo unitario ${money(x.costoUnit)} · venta ${money(p?p.precio:0)}</div></div><div class="n">${num(x.cantidad)}<small>unidades</small></div></div>`}).join('')}
+        return `<div class="row"><div class="g"><div class="t">${esc(p?p.nombre:'—')}</div><div class="s">${money(x.costoUnit)} el paquete · ${money(x.costoUnit/10)} c/empanada</div></div><div class="n">${num(x.cantidad)}<small>paquetes</small></div></div>`}).join('')}
       <div class="eyebrow" style="margin-top:10px">Quién trabajó</div>
       ${l.mano.length? l.mano.map(m=>{const u=usuario(m.empleadoId);
         return `<div class="row"><div class="g"><div class="t">${esc(u?u.nombre:'—')}</div><div class="s">${money(m.valorHora)} por hora</div></div><div class="n">${num(m.horas)} h<small>${money(m.horas*m.valorHora)}</small></div></div>`}).join('')
         : '<p style="font-size:13px;color:var(--tinta-3)">Sin mano de obra registrada.</p>'}
       <div class="eyebrow" style="margin-top:10px">Insumos consumidos</div>
-      ${l.consumos.map(c=>{const i=insumo(c.insumoId);
-        return `<div class="row"><div class="g"><div class="t">${esc(i?i.nombre:'—')}</div></div><div class="n">${num(c.cantidad)} ${i?UNIC[i.unidad]:''}<small>${money(c.cantidad*c.precio)}</small></div></div>`}).join('')}
+      ${l.consumos.map(c=>{const i=insumo(c.insumoId); const d=c.destino?producto(c.destino):null;
+        return `<div class="row"><div class="g"><div class="t">${esc(i?i.nombre:'—')}</div><div class="s">${d?'solo '+esc(d.nombre):'común'}</div></div><div class="n">${num(c.cantidad)} ${i?UNIC[i.unidad]:''}<small>${money(c.cantidad*c.precio)}</small></div></div>`}).join('')}
     </div>`;
   }).join('') : `<div class="card">${vacio('🔥','Registra el primer lote de producción del día.')}</div>`;
   return h;
@@ -656,16 +660,18 @@ function formLote(){
   abrirModal('Nuevo lote de producción',`
   <div class="f"><label>Fecha del lote</label><input id="lF" type="date" value="${hoy()}"></div>
 
-  <div class="eyebrow">1 · Empanadas producidas</div>
-  <div id="pBox"></div>
-  <button class="btn sm ghost wide" style="margin:4px 0 14px" onclick="addProd()">＋ Agregar producto</button>
-
-  <div class="eyebrow">2 · Insumos que se usaron</div>
+  <div class="eyebrow">1 · Insumos que se usaron</div>
+  <p style="font-size:12.5px;color:var(--tinta-3);margin:0 0 8px">Carga la masa, el maíz y demás como <b>común</b>. El relleno (pollo, carne, queso) cárgalo <b>a su tipo</b> para que solo encarezca esa empanada.</p>
   <div id="cBox"></div>
-  <div class="grid2" style="gap:8px;margin:4px 0 14px">
+  <div class="grid2" style="gap:8px;margin:4px 0 16px">
     <button class="btn sm ghost" onclick="addCons()">＋ Insumo</button>
     <button class="btn sm dark" onclick="cargarRecetas()">Cargar según receta</button>
   </div>
+
+  <div class="eyebrow">2 · Cuántos paquetes salieron</div>
+  <p style="font-size:12.5px;color:var(--tinta-3);margin:0 0 8px">Cada paquete es de 10 empanadas.</p>
+  <div id="pBox"></div>
+  <button class="btn sm ghost wide" style="margin:4px 0 16px" onclick="addProd()">＋ Agregar tipo</button>
 
   <div class="eyebrow">3 · Quién trabajó y cuántas horas</div>
   <div id="mBox"></div>
@@ -677,38 +683,46 @@ function formLote(){
 }
 function leerLote(){
   pTmp.forEach((x,i)=>{const s=$('pP'+i);if(s){x.productoId=+s.value;x.cantidad=+$('pQ'+i).value||0}});
-  cTmp.forEach((x,i)=>{const s=$('cI'+i);if(s){x.insumoId=+s.value;x.cantidad=+$('cQ'+i).value||0}});
+  cTmp.forEach((x,i)=>{const s=$('cI'+i);if(s){x.insumoId=+s.value;x.cantidad=+$('cQ'+i).value||0;x.destino=+$('cD'+i).value||0}});
   mTmp.forEach((x,i)=>{const s=$('mE'+i);if(s){x.empleadoId=+s.value;x.horas=+$('mH'+i).value||0}});
 }
 function addProd(){leerLote();pTmp.push({productoId:DB.productos[0].id,cantidad:0});pintarLote()}
 function delProd(i){leerLote();pTmp.splice(i,1);pintarLote()}
-function addCons(){if(!DB.insumos.length)return toast('No hay insumos');leerLote();cTmp.push({insumoId:DB.insumos[0].id,cantidad:0});pintarLote()}
+function addCons(){if(!DB.insumos.length)return toast('No hay insumos');leerLote();cTmp.push({insumoId:DB.insumos[0].id,cantidad:0,destino:0});pintarLote()}
 function delCons(i){leerLote();cTmp.splice(i,1);pintarLote()}
 function addMano(){const e=DB.usuarios.filter(u=>puedeProducir(u));if(!e.length)return toast('No hay empleados de producción');leerLote();mTmp.push({empleadoId:e[0].id,horas:0});pintarLote()}
 function delMano(i){leerLote();mTmp.splice(i,1);pintarLote()}
 
 function cargarRecetas(){
   leerLote();
-  const map={};
-  pTmp.forEach(x=>{const p=producto(x.productoId); if(!p)return;
-    p.receta.forEach(r=>{ map[r.insumoId]=(map[r.insumoId]||0)+r.cantidad*x.cantidad; })});
-  cTmp=Object.keys(map).map(k=>({insumoId:+k,cantidad:Math.round(map[k]*100)/100}));
-  pintarLote(); toast('Insumos cargados desde las recetas');
+  const lineas=[];
+  pTmp.forEach(x=>{const p=producto(x.productoId); if(!p||!x.cantidad)return;
+    p.receta.forEach(r=>{
+      lineas.push({insumoId:r.insumoId, cantidad:Math.round(r.cantidad*x.cantidad*100)/100, destino:p.id});
+    })});
+  if(!lineas.length) return toast('Primero escribe los paquetes producidos');
+  cTmp=lineas; pintarLote(); toast('Insumos cargados desde las recetas');
 }
 
 function pintarLote(){
   const emp=DB.usuarios.filter(u=>puedeProducir(u));
   $('pBox').innerHTML=pTmp.map((x,i)=>`<div class="linea-item">
-    <div class="f"><label>Producto</label><select id="pP${i}" onchange="leerLote();pintarLoteTot()">${DB.productos.map(p=>`<option value="${p.id}" ${p.id==x.productoId?'selected':''}>${esc(p.nombre)}</option>`).join('')}</select></div>
-    <div class="f" style="max-width:105px"><label>Unidades</label><input id="pQ${i}" type="number" value="${x.cantidad}" oninput="leerLote();pintarLoteTot()"></div>
+    <div class="f"><label>Tipo de empanada</label><select id="pP${i}" onchange="leerLote();pintarLote()">${DB.productos.map(p=>`<option value="${p.id}" ${p.id==x.productoId?'selected':''}>${esc(p.nombre)}</option>`).join('')}</select></div>
+    <div class="f" style="max-width:105px"><label>Paquetes</label><input id="pQ${i}" type="number" value="${x.cantidad}" oninput="leerLote();pintarLoteTot()"></div>
     <button class="del" onclick="delProd(${i})">×</button></div>`).join('');
+
   $('cBox').innerHTML=cTmp.length? cTmp.map((x,i)=>{const ins=insumo(x.insumoId);
-    return `<div class="linea-item">
-    <div class="f"><label>Insumo <span style="color:var(--terracota)">disp. ${ins?num(ins.stock)+' '+UNIC[ins.unidad]:''}</span></label>
+    return `<div style="border:1px solid var(--linea);border-radius:12px;padding:10px;margin-bottom:8px;background:#fff">
+    <div class="f" style="margin-bottom:8px"><label>Insumo <span style="color:var(--terracota)">disp. ${ins?num(ins.stock)+' '+UNIC[ins.unidad]:''}</span></label>
       <select id="cI${i}" onchange="leerLote();pintarLote()">${DB.insumos.map(s=>`<option value="${s.id}" ${s.id==x.insumoId?'selected':''}>${esc(s.nombre)} (${UNIC[s.unidad]})</option>`).join('')}</select></div>
-    <div class="f" style="max-width:105px"><label>Cantidad</label><input id="cQ${i}" type="number" step="0.01" value="${x.cantidad}" oninput="leerLote();pintarLoteTot()"></div>
-    <button class="del" onclick="delCons(${i})">×</button></div>`}).join('')
+    <div class="linea-item" style="margin-bottom:0">
+      <div class="f" style="max-width:100px"><label>Cantidad</label><input id="cQ${i}" type="number" step="0.01" value="${x.cantidad}" oninput="leerLote();pintarLoteTot()"></div>
+      <div class="f"><label>Se carga a</label><select id="cD${i}" onchange="leerLote();pintarLoteTot()">
+        <option value="0" ${!x.destino?'selected':''}>Común (todos)</option>
+        ${DB.productos.map(p=>`<option value="${p.id}" ${p.id==x.destino?'selected':''}>Solo ${esc(p.nombre)}</option>`).join('')}</select></div>
+      <button class="del" onclick="delCons(${i})">×</button></div></div>`}).join('')
     : '<p style="font-size:13px;color:var(--tinta-3);margin:0 0 6px">Agrega los insumos o cárgalos desde la receta.</p>';
+
   $('mBox').innerHTML=mTmp.length? mTmp.map((x,i)=>`<div class="linea-item">
     <div class="f"><label>Empleado</label><select id="mE${i}" onchange="leerLote();pintarLoteTot()">${emp.map(e=>`<option value="${e.id}" ${e.id==x.empleadoId?'selected':''}>${esc(e.nombre)}</option>`).join('')}</select></div>
     <div class="f" style="max-width:105px"><label>Horas</label><input id="mH${i}" type="number" step="0.25" value="${x.horas}" oninput="leerLote();pintarLoteTot()"></div>
@@ -716,41 +730,63 @@ function pintarLote(){
     : '<p style="font-size:13px;color:var(--tinta-3);margin:0 0 6px">Agrega quiénes trabajaron en este lote.</p>';
   pintarLoteTot();
 }
+
+/* Costo común (masa, maíz, mano de obra) se reparte entre todos los paquetes.
+   Costo del relleno se carga solo al tipo de empanada al que pertenece.      */
 function calcLote(){
-  const ci=cTmp.reduce((a,x)=>{const i=insumo(x.insumoId);return a+(i?i.precio*x.cantidad:0)},0);
+  const val=x=>{const i=insumo(x.insumoId); return i? i.precio*x.cantidad : 0;};
+  const comun=cTmp.filter(x=>!x.destino).reduce((a,x)=>a+val(x),0);
+  const espec={};
+  cTmp.filter(x=>x.destino).forEach(x=>{ espec[x.destino]=(espec[x.destino]||0)+val(x); });
   const cm=mTmp.reduce((a,x)=>{const u=usuario(x.empleadoId);return a+((u?u.vhProd:0)*x.horas)},0);
-  const und=pTmp.reduce((a,x)=>a+x.cantidad,0);
-  return {ci,cm,total:ci+cm,und,unit:und?(ci+cm)/und:0};
+  const paq=pTmp.reduce((a,x)=>a+x.cantidad,0);
+  const comunTotal=comun+cm;
+  const porPaqComun= paq? comunTotal/paq : 0;
+  const detalle=pTmp.filter(x=>x.cantidad>0).map(x=>{
+    const e=espec[x.productoId]||0;
+    const unit=porPaqComun + e/x.cantidad;
+    return {productoId:x.productoId, cantidad:x.cantidad, costoUnit:unit, especifico:e};
+  });
+  const ci=comun+Object.values(espec).reduce((a,b)=>a+b,0);
+  return {ci,cm,comun,espec,total:ci+cm,paq,porPaqComun,detalle};
 }
 function pintarLoteTot(){
   const c=calcLote();
-  $('loteTot').innerHTML=`<div class="tot">
-    <div class="l">Costo de insumos<b>${money(c.ci)}</b></div>
+  let h=`<div class="tot">
+    <div class="l">Insumos comunes<b>${money(c.comun)}</b></div>
+    <div class="l">Rellenos por tipo<b>${money(c.ci-c.comun)}</b></div>
     <div class="l">Mano de obra<b>${money(c.cm)}</b></div>
-    <div class="l">Empanadas producidas<b>${num(c.und)}</b></div>
-    <div class="l big">Costo por empanada<b>${money(c.unit)}</b></div></div>`;
+    <div class="l">Paquetes producidos<b>${num(c.paq)}</b></div>
+    <div class="l big">Costo total del lote<b>${money(c.total)}</b></div></div>`;
+  if(c.detalle.length){
+    h+='<div class="card"><h3>Costo por paquete de este lote</h3>';
+    h+=c.detalle.map(d=>{const p=producto(d.productoId);
+      return `<div class="row"><div class="g"><div class="t">${esc(p?p.nombre:'—')}</div><div class="s">${d.cantidad} paq · relleno ${money(d.especifico)}</div></div>
+      <div class="n">${money(d.costoUnit)}<small>${money(d.costoUnit/10)} c/empanada</small></div></div>`}).join('');
+    h+='</div>';
+  }
+  $('loteTot').innerHTML=h;
 }
 async function guardarLote(){
   leerLote();
-  const prods=pTmp.filter(x=>x.cantidad>0);
-  if(!prods.length) return toast('Registra cuántas empanadas salieron');
-  const cons=cTmp.filter(x=>x.cantidad>0);
-  for(const c of cons){ const i=insumo(c.insumoId);
-    if(i.stock<c.cantidad) return toast('No hay suficiente '+i.nombre+' en inventario'); }
   const c=calcLote();
-  // reparto de costo por producto, ponderado por el costo de su receta
-  const pesos=prods.map(x=>{const p=producto(x.productoId); const cr=p?costoReceta(p):0; return (cr>0?cr:1)*x.cantidad;});
-  const sumaPesos=pesos.reduce((a,b)=>a+b,0)||1;
-  const producidos=prods.map((x,k)=>{
-    const parte=c.total*(pesos[k]/sumaPesos);
-    return {productoId:x.productoId,cantidad:x.cantidad,costoUnit:Math.round(parte/x.cantidad)};
-  });
+  if(!c.detalle.length) return toast('Escribe cuántos paquetes salieron');
+  const cons=cTmp.filter(x=>x.cantidad>0);
+  for(const x of cons){ const i=insumo(x.insumoId);
+    if(i.stock<x.cantidad) return toast('No hay suficiente '+i.nombre+' en inventario'); }
   cons.forEach(x=>{ insumo(x.insumoId).stock-=x.cantidad; });
-  prods.forEach(x=>{ DB.stockProd[x.productoId]=(DB.stockProd[x.productoId]||0)+x.cantidad; });
+  // entra a bodega y se recalcula el costo promedio ponderado
+  if(!DB.costoProd) DB.costoProd={};
+  c.detalle.forEach(d=>{
+    const ant=DB.stockProd[d.productoId]||0, costoAnt=DB.costoProd[d.productoId]||0;
+    const nuevo=ant+d.cantidad;
+    DB.costoProd[d.productoId]= nuevo? (ant*costoAnt + d.cantidad*d.costoUnit)/nuevo : d.costoUnit;
+    DB.stockProd[d.productoId]=nuevo;
+  });
   DB.lotes.push({
     id:nid(), fecha:$('lF').value||hoy(), creado:new Date().toISOString(),
     consumos:cons.map(x=>({...x,precio:insumo(x.insumoId).precio})),
-    producidos,
+    producidos:c.detalle.map(d=>({...d,costoUnit:Math.round(d.costoUnit)})),
     mano:mTmp.filter(x=>x.horas>0).map(x=>({empleadoId:x.empleadoId,horas:x.horas,valorHora:usuario(x.empleadoId).vhProd||0})),
     costoInsumos:c.ci, costoMano:c.cm, costoTotal:c.total
   });
@@ -761,14 +797,17 @@ async function guardarLote(){
    INVENTARIO PRODUCTO TERMINADO
    ========================================================= */
 function vInventario(){
-  let h=head('Bodega','Empanadas listas para vender',`<button class="btn sm ghost" onclick="formAjuste()">Ajustar</button>`);
+  let h=head('Bodega','Paquetes listos para vender',`<button class="btn sm ghost" onclick="formAjuste()">Ajustar</button>`);
   const tot=Object.values(DB.stockProd).reduce((a,b)=>a+b,0);
   const valor=DB.productos.reduce((a,p)=>a+stockDe(p.id)*p.precio,0);
+  const costo=DB.productos.reduce((a,p)=>a+stockDe(p.id)*costoProm(p.id),0);
   h+=`<div class="grid2">
-    <div class="stat acc"><div class="l">Total en bodega</div><div class="v">${num(tot)}</div></div>
-    <div class="stat"><div class="l">Valor a precio de venta</div><div class="v">${money(valor)}</div></div></div>`;
-  h+='<div class="card"><h3>Existencias por producto</h3>';
-  h+= DB.productos.length? DB.productos.map(p=>`<div class="row"><div class="g"><div class="t">${esc(p.nombre)}</div><div class="s">${money(p.precio)} c/u</div></div><div class="n">${num(stockDe(p.id))}<small>unidades</small></div></div>`).join('') : vacio('📦','No hay productos creados.');
+    <div class="stat acc"><div class="l">Paquetes en bodega</div><div class="v">${num(tot)}</div></div>
+    <div class="stat"><div class="l">Empanadas</div><div class="v">${num(tot*10)}</div></div>
+    <div class="stat"><div class="l">Costo de producción</div><div class="v" style="font-size:17px">${money(costo)}</div></div>
+    <div class="stat"><div class="l">Valor a precio de lista</div><div class="v" style="font-size:17px">${money(valor)}</div></div></div>`;
+  h+='<div class="card"><h3>Existencias y costo promedio</h3>';
+  h+= DB.productos.length? DB.productos.map(p=>`<div class="row"><div class="g"><div class="t">${esc(p.nombre)}</div><div class="s">costo promedio ${money(costoProm(p.id))} el paquete · lista ${money(p.precio)}</div></div><div class="n">${num(stockDe(p.id))}<small>paquetes</small></div></div>`).join('') : vacio('📦','No hay productos creados.');
   h+='</div>';
   return h;
 }
@@ -956,9 +995,7 @@ function vReportes(){
   h+= DB.productos.map(p=>{
     const ls=DB.lotes.flatMap(l=>l.producidos.filter(x=>x.productoId==p.id));
     const u=ls.reduce((a,x)=>a+x.cantidad,0);
-    const c=ls.reduce((a,x)=>a+x.cantidad*x.costoUnit,0);
-    const prom=u?c/u:costoReceta(p);
-    return `<div class="row"><div class="g"><div class="t">${esc(p.nombre)}</div><div class="s">venta ${money(p.precio)} · ${u} producidas</div></div><div class="n">${money(prom)}<small>costo unitario</small></div></div>`;
+    return `<div class="row"><div class="g"><div class="t">${esc(p.nombre)}</div><div class="s">${u} paquetes producidos · lista ${money(p.precio)}</div></div><div class="n">${money(costoProm(p.id))}<small>costo del paquete</small></div></div>`;
   }).join('')||vacio('📊','Sin datos.');
   h+='</div>';
 
