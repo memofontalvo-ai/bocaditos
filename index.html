@@ -308,8 +308,8 @@ const insumo=id=>DB.insumos.find(i=>i.id==id);
 const producto=id=>DB.productos.find(p=>p.id==id);
 const usuario=id=>DB.usuarios.find(u=>u.id==id);
 const stockDe=id=>DB.stockProd[id]||0;
-const puedeProducir=u=>u&&(u.rol==='produccion'||u.rol==='ambos');
-const puedeVender=u=>u&&(u.rol==='vendedor'||u.rol==='ambos');
+const puedeProducir=u=>u&&(u.rol==='produccion'||u.rol==='ambos'||u.rol==='admin');
+const puedeVender=u=>u&&(u.rol==='vendedor'||u.rol==='ambos'||u.rol==='admin');
 
 /* ---------- arranque ---------- */
 (async function init(){
@@ -544,12 +544,14 @@ function vProductos(){
         <div><div class="eyebrow">Producto</div><h3 style="font-size:18px">${esc(p.nombre)}</h3></div>
         <button class="btn sm ghost" onclick="formProducto(${p.id})">✎ Editar</button>
       </div>
-      <div class="grid3" style="margin:12px 0">
-        <div class="stat"><div class="l">Precio venta</div><div class="v" style="font-size:17px">${money(p.precio)}</div></div>
+      <div class="grid2" style="margin:12px 0 8px">
+        <div class="stat"><div class="l">Precio de lista</div><div class="v" style="font-size:17px">${money(p.precio)}</div></div>
+        <div class="stat"><div class="l">Precio distribuidor</div><div class="v" style="font-size:17px">${money(p.precioDist||0)}</div></div>
         <div class="stat"><div class="l">Costo receta</div><div class="v" style="font-size:17px">${money(c)}</div></div>
         <div class="stat"><div class="l">Comisión</div><div class="v" style="font-size:17px">${p.comision}%</div></div>
       </div>
-      <div class="row"><div class="g"><div class="t">Margen por empanada</div><div class="s">${pct.toFixed(0)}% sobre el precio</div></div><div class="n" style="color:${m>0?'var(--verde)':'var(--rojo)'}">${money(m)}</div></div>
+      <div class="row"><div class="g"><div class="t">Margen a precio de lista</div><div class="s">${pct.toFixed(0)}% sobre el precio</div></div><div class="n" style="color:${m>0?'var(--verde)':'var(--rojo)'}">${money(m)}</div></div>
+      <div class="row"><div class="g"><div class="t">Margen a precio distribuidor</div></div><div class="n" style="color:${(p.precioDist||0)-c>0?'var(--verde)':'var(--rojo)'}">${money((p.precioDist||0)-c)}</div></div>
       <div style="margin-top:8px"><div class="eyebrow">Receta por unidad</div>
       ${p.receta.length? p.receta.map(r=>{const i=insumo(r.insumoId);
         return `<div class="row"><div class="g"><div class="t">${esc(i?i.nombre:'—')}</div></div><div class="n">${num(r.cantidad)} ${i?UNIC[i.unidad]:''}<small>${money(i?i.precio*r.cantidad:0)}</small></div></div>`}).join('')
@@ -566,9 +568,10 @@ function formProducto(id){
   abrirModal(p?'Editar producto':'Nuevo producto',`
   <div class="f"><label>Nombre del producto</label><input id="pN" value="${p?esc(p.nombre):''}" placeholder="Empanada de queso"></div>
   <div class="grid2">
-    <div class="f"><label>Precio de venta</label><input id="pP" type="number" step="0.01" value="${p?p.precio:''}" placeholder="0"></div>
-    <div class="f"><label>Comisión vendedor (%)</label><input id="pC" type="number" step="0.1" value="${p?p.comision:0}" placeholder="0"></div>
+    <div class="f"><label>Precio de lista</label><input id="pP" type="number" step="0.01" value="${p?p.precio:''}" placeholder="0" oninput="pintarTot()"></div>
+    <div class="f"><label>Precio distribuidor</label><input id="pD" type="number" step="0.01" value="${p?(p.precioDist||0):''}" placeholder="0" oninput="pintarTot()"></div>
   </div>
+  <div class="f"><label>Comisión vendedor (%)</label><input id="pC" type="number" step="0.1" value="${p?p.comision:0}" placeholder="0"></div>
   <div class="eyebrow" style="margin-top:6px">Ingredientes por empanada</div>
   <div id="recetaBox"></div>
   <button class="btn sm ghost wide" style="margin:4px 0 10px" onclick="addReceta()">＋ Agregar ingrediente</button>
@@ -593,17 +596,18 @@ function pintarReceta(){
 function pintarTot(){
   const c=recetaTmp.reduce((a,r)=>{const i=insumo(r.insumoId);return a+(i?i.precio*r.cantidad:0)},0);
   const pv=+($('pP')?$('pP').value:0)||0;
+  const pd=+($('pD')?$('pD').value:0)||0;
   $('recetaTot').innerHTML=`<div class="tot"><div class="l">Costo de ingredientes<b>${money(c)}</b></div>
-  <div class="l">Precio de venta<b>${money(pv)}</b></div>
-  <div class="l big">Margen<b>${money(pv-c)}</b></div></div>`;
+  <div class="l">Margen a precio de lista<b>${money(pv-c)}</b></div>
+  <div class="l big">Margen a precio distribuidor<b>${money(pd-c)}</b></div></div>`;
 }
 async function guardarProducto(id){
   leerReceta();
-  const n=$('pN').value.trim(), pv=+$('pP').value||0, com=+$('pC').value||0;
+  const n=$('pN').value.trim(), pv=+$('pP').value||0, pd=+$('pD').value||0, com=+$('pC').value||0;
   if(!n) return toast('Escribe el nombre del producto');
   const receta=recetaTmp.filter(r=>r.insumoId&&r.cantidad>0);
-  if(id){ Object.assign(producto(id),{nombre:n,precio:pv,comision:com,receta}); }
-  else{ const np={id:nid(),nombre:n,precio:pv,comision:com,receta}; DB.productos.push(np); DB.stockProd[np.id]=0; }
+  if(id){ Object.assign(producto(id),{nombre:n,precio:pv,precioDist:pd,comision:com,receta}); }
+  else{ const np={id:nid(),nombre:n,precio:pv,precioDist:pd,comision:com,receta}; DB.productos.push(np); DB.stockProd[np.id]=0; }
   await guardar(); cerrarModal(); render(); toast('Producto guardado');
 }
 async function borrarProducto(id){
@@ -805,33 +809,25 @@ function formEmpleado(id){
   abrirModal(u?'Editar persona':'Nueva persona',`
   <div class="f"><label>Nombre completo</label><input id="uN" value="${u?esc(u.nombre):''}" placeholder="María Gómez"></div>
   <div class="f"><label>Cargo</label><input id="uC" value="${u?esc(u.cargo||''):''}" placeholder="Socia · producción y ventas"></div>
-  <div class="f"><label>Función en la empresa</label><select id="uR" onchange="camposRol()">
+  <div class="f"><label>Función en la empresa</label><select id="uR">
     <option value="produccion" ${u&&u.rol=='produccion'?'selected':''}>Producción</option>
     <option value="vendedor" ${u&&u.rol=='vendedor'?'selected':''}>Vendedor</option>
     <option value="ambos" ${u&&u.rol=='ambos'?'selected':''}>Producción y ventas</option>
     <option value="admin" ${u&&u.rol=='admin'?'selected':''}>Administrador</option></select></div>
-  <div class="grid2" id="valores">
-    <div class="f" id="fvp"><label>Valor hora producción</label><input id="uVP" type="number" value="${u?u.vhProd||0:0}"></div>
-    <div class="f" id="fvc"><label>Valor hora ventas</label><input id="uVC" type="number" value="${u?u.vhCom||0:0}"></div>
-  </div>
+  <div class="f"><label>Valor de la hora de producción</label><input id="uVP" type="number" value="${u?u.vhProd||0:0}"></div>
+  <p style="font-size:12.5px;color:var(--tinta-3);margin:-4px 0 12px">Las ventas no se pagan por hora: el vendedor gana la comisión del producto.</p>
   <div class="grid2">
     <div class="f"><label>Usuario</label><input id="uU" value="${u?esc(u.usuario):''}" autocapitalize="none" placeholder="maria"></div>
     <div class="f"><label>Contraseña</label><input id="uP" value="${u?esc(u.clave):''}" placeholder="clave"></div>
   </div>
   <button class="btn wide" onclick="guardarEmpleado(${id||0})">Guardar persona</button>
   ${u&&u.id!=1?`<button class="btn wide ghost" style="margin-top:8px;border-color:var(--rojo);color:var(--rojo)" onclick="borrarEmpleado(${u.id})">Eliminar</button>`:''}`);
-  camposRol();
-}
-function camposRol(){
-  const r=$('uR').value;
-  $('fvp').style.display=(r=='produccion'||r=='ambos')?'block':'none';
-  $('fvc').style.display=(r=='vendedor'||r=='ambos')?'block':'none';
 }
 async function guardarEmpleado(id){
   const n=$('uN').value.trim(), us=$('uU').value.trim(), cl=$('uP').value.trim();
   if(!n||!us||!cl) return toast('Falta nombre, usuario o contraseña');
   if(DB.usuarios.some(x=>x.usuario.toLowerCase()===us.toLowerCase()&&x.id!=id)) return toast('Ese usuario ya existe');
-  const d={nombre:n,cargo:$('uC').value.trim(),rol:$('uR').value,vhProd:+$('uVP').value||0,vhCom:+$('uVC').value||0,usuario:us,clave:cl,activo:true};
+  const d={nombre:n,cargo:$('uC').value.trim(),rol:$('uR').value,vhProd:+$('uVP').value||0,usuario:us,clave:cl,activo:true};
   if(id) Object.assign(usuario(id),d); else DB.usuarios.push({id:nid(),...d});
   await guardar(); cerrarModal(); render(); toast('Persona guardada');
 }
@@ -903,25 +899,28 @@ function formVenta(id){
   const p=producto(a.productoId), rest=a.cantidad-a.vendidas;
   abrirModal('Registrar venta',`
   <div class="card" style="margin-bottom:14px;box-shadow:none">
-    <div class="row"><div class="g"><div class="t">${esc(p.nombre)}</div><div class="s">${money(p.precio)} c/u · comisión ${p.comision}%</div></div><div class="n">${rest}<small>pendientes</small></div></div></div>
+    <div class="row"><div class="g"><div class="t">${esc(p.nombre)}</div><div class="s">lista ${money(p.precio)} · distribuidor ${money(p.precioDist||0)} · comisión ${p.comision}%</div></div><div class="n">${rest}<small>pendientes</small></div></div></div>
+  <div class="f"><label>Tipo de cliente y precio</label><select id="vT" onchange="pintaVenta()">
+    <option value="lista">Cliente final — precio de lista (${money(p.precio)})</option>
+    <option value="dist">Distribuidor — precio distribuidor (${money(p.precioDist||0)})</option></select></div>
   <div class="f"><label>Cantidad vendida</label><input id="vQ" type="number" value="${rest}" oninput="pintaVenta()"></div>
-  <div class="grid2">
-    <div class="f"><label>Cliente</label><input id="vC" value="${esc(a.cliente)}" placeholder="Tienda La Esquina"></div>
-    <div class="f"><label>Tipo de cliente</label><select id="vT">
-      <option value="Tienda">Tienda</option><option value="Distribuidor">Distribuidor</option>
-      <option value="Consumidor final">Consumidor final</option><option value="Evento">Evento</option></select></div>
-  </div>
+  <div class="f"><label>Nombre del cliente</label><input id="vC" value="${esc(a.cliente)}" placeholder="Tienda La Esquina"></div>
   <div id="vTot"></div>
   <button class="btn wide" onclick="guardarVenta(${id})">Registrar venta</button>`);
   pintaVenta();
+}
+function precioAplicado(p){
+  const t=$('vT')?$('vT').value:'lista';
+  return t==='dist' ? (p.precioDist||0) : p.precio;
 }
 function pintaVenta(){
   const q=+$('vQ').value||0;
   const asig=window.__asig; if(!asig) return;
   const p=producto(asig.productoId);
-  const total=q*p.precio, com=total*(p.comision/100);
+  const pr=precioAplicado(p);
+  const total=q*pr, com=total*(p.comision/100);
   $('vTot').innerHTML=`<div class="tot">
-    <div class="l">Precio unitario<b>${money(p.precio)}</b></div>
+    <div class="l">Precio aplicado<b>${money(pr)}</b></div>
     <div class="l">Total de la venta<b>${money(total)}</b></div>
     <div class="l big">Comisión del vendedor<b>${money(com)}</b></div></div>`;
 }
@@ -929,10 +928,12 @@ async function guardarVenta(id){
   const a=DB.asignaciones.find(x=>x.id==id), p=producto(a.productoId);
   const q=+$('vQ').value||0, rest=a.cantidad-a.vendidas;
   if(q<=0||q>rest) return toast('Cantidad inválida (máx. '+rest+')');
+  const pr=precioAplicado(p);
   a.vendidas+=q;
-  a.valorVendido+=q*p.precio;
-  a.comisionGanada+=q*p.precio*(p.comision/100);
-  a.cliente=$('vC').value.trim(); a.tipoCliente=$('vT').value;
+  a.valorVendido+=q*pr;
+  a.comisionGanada+=q*pr*(p.comision/100);
+  a.cliente=$('vC').value.trim();
+  a.tipoCliente=$('vT').value==='dist'?'Distribuidor':'Cliente final';
   await guardar(); cerrarModal(); render(); toast('Venta registrada');
 }
 
