@@ -98,6 +98,41 @@ h1,h2,h3{margin:0;line-height:1.2}
 #publico footer .mark{font-size:26px;margin-bottom:8px}
 #publico footer a{color:var(--crema);font-weight:900;text-decoration:none;font-size:16px}
 
+
+/* ---------- VENTANA DE PEDIDO ---------- */
+#pedidoModal{position:fixed;inset:0;z-index:95;background:var(--papel);display:flex;flex-direction:column}
+#pedidoModal .ph{background:var(--masa);color:var(--crema);display:flex;align-items:center;
+  justify-content:space-between;gap:10px;padding:calc(14px + env(safe-area-inset-top)) 16px 14px;flex-shrink:0}
+#pedidoModal .ph h3{font-size:18px;font-weight:900}
+#pedidoModal .ph .sub{font-size:11.5px;color:#A08D74;font-weight:700;text-transform:uppercase;letter-spacing:1px}
+#pedidoModal .ph .x{background:none;border:1px solid #4A3B2C;color:var(--crema);border-radius:50%;
+  width:38px;height:38px;font-size:20px;cursor:pointer;flex-shrink:0;line-height:1}
+#pedidoModal .pbody{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:16px 14px 20px;max-width:640px;margin:0 auto;width:100%}
+#pedidoModal .pfoot{flex-shrink:0;background:var(--masa);color:var(--crema);padding:12px 14px calc(12px + env(safe-area-inset-bottom));
+  box-shadow:0 -6px 20px rgba(23,18,14,.25)}
+#pedidoModal .pfoot .res{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px}
+#pedidoModal .pfoot .res .l{font-size:12px;color:#A08D74;font-weight:800;text-transform:uppercase;letter-spacing:1px}
+#pedidoModal .pfoot .res .v{font-size:24px;font-weight:900}
+#pedidoModal .pfoot .env{width:100%;background:var(--terracota);color:#fff;border:none;padding:15px;
+  border-radius:14px;font-weight:900;font-size:16px;cursor:pointer}
+#pedidoModal .pfoot .env:disabled{opacity:.4}
+
+.menu-item{background:#fff;border:1.5px solid var(--linea);border-radius:16px;padding:12px;
+  margin-bottom:10px;display:flex;align-items:center;gap:12px;box-shadow:var(--sh)}
+.menu-item.sel{border-color:var(--terracota);background:#FFFBF6}
+.menu-item .foto{width:64px;height:64px;border-radius:14px;flex-shrink:0;
+  background:radial-gradient(110% 90% at 50% 30%,#E9903B,#B14A16);
+  display:flex;align-items:center;justify-content:center;font-size:32px}
+.menu-item .info{flex:1;min-width:0}
+.menu-item .info .n{font-weight:900;font-size:15px;line-height:1.2}
+.menu-item .info .d{font-size:11.5px;color:var(--tinta-3);font-weight:700;margin-top:1px}
+.menu-item .info .pr{font-size:17px;font-weight:900;margin-top:3px;color:var(--terracota-d)}
+.stepper{display:flex;align-items:center;gap:6px;flex-shrink:0}
+.stepper button{width:36px;height:36px;border-radius:11px;border:1.5px solid var(--linea);
+  background:var(--papel);font-size:19px;font-weight:900;color:var(--terracota);cursor:pointer;line-height:1;padding:0}
+.stepper button:active{background:var(--terracota);color:#fff;border-color:var(--terracota)}
+.stepper .q{min-width:26px;text-align:center;font-size:18px;font-weight:900;font-variant-numeric:tabular-nums}
+
 /* ---------- LOGIN ---------- */
 #login{
   position:fixed;inset:0;z-index:100;
@@ -286,7 +321,7 @@ label{display:block;font-size:11.5px;font-weight:900;text-transform:uppercase;le
     <div class="tag">Sabor de nuestra tierra</div>
     <p class="lead">Empanadas colombianas de maíz, hechas a mano y congeladas para que las disfrutes recién hechas en tu casa.</p>
     <div class="cta">
-      <button class="b1" onclick="document.getElementById('formPedido').scrollIntoView({behavior:'smooth'})">Hacer un pedido</button>
+      <button class="b1" onclick="abrirPedido()">🥟 Hacer un pedido</button>
       <a class="b2" href="https://wa.me/19804226218" target="_blank">WhatsApp</a>
     </div>
   </div>
@@ -313,8 +348,9 @@ label{display:block;font-size:11.5px;font-weight:900;text-transform:uppercase;le
 
   <div class="sec" id="formPedido" style="padding-top:0">
     <h2>Haz tu pedido</h2>
-    <div class="sub">Déjanos tus datos y te contactamos para confirmar</div>
-    <div id="pedidoBox"></div>
+    <div class="sub">Escoge tus sabores y te lo llevamos</div>
+    <button class="btn wide" style="padding:17px;font-size:17px;border-radius:16px" onclick="abrirPedido()">🥟 Hacer un pedido</button>
+    <p class="ayuda" style="text-align:center;margin-top:10px">O escríbenos al <a href="https://wa.me/19804226218" style="color:var(--terracota);font-weight:900;text-decoration:none">+1 (980) 422-6218</a></p>
   </div>
 
   <footer>
@@ -323,6 +359,16 @@ label{display:block;font-size:11.5px;font-weight:900;text-transform:uppercase;le
     <a href="https://wa.me/19804226218">+1 (980) 422-6218</a>
     <div style="margin-top:10px">Sabor de nuestra tierra 🇨🇴</div>
   </footer>
+</div>
+
+<!-- ============ VENTANA DE PEDIDO ============ -->
+<div id="pedidoModal" class="hide">
+  <div class="ph">
+    <div><h3>Hacer un pedido</h3><div class="sub">Bocaditos</div></div>
+    <button class="x" onclick="cerrarPedido()">×</button>
+  </div>
+  <div class="pbody" id="pedidoBox"></div>
+  <div class="pfoot" id="pedidoFoot"></div>
 </div>
 
 <!-- ============ LOGIN ============ -->
@@ -336,7 +382,7 @@ label{display:block;font-size:11.5px;font-weight:900;text-transform:uppercase;le
     <button type="submit">Entrar</button>
   </form>
   <button type="button" class="corp" style="border-color:#4A3B2C;color:#A08D74;margin-top:18px;background:none;border-radius:20px;padding:9px 14px;font-size:12px;font-weight:800;cursor:pointer" onclick="volverPublico()">← Volver a la página</button>
-  <div class="hint"><b style="color:#C9B79C">Versión 2.6</b> · <span id="estado">Conectando…</span><br><br>Primer ingreso — administrador<br><b>admin</b> / <b>admin123</b></div>
+  <div class="hint"><b style="color:#C9B79C">Versión 2.7</b> · <span id="estado">Conectando…</span><br><br>Primer ingreso — administrador<br><b>admin</b> / <b>admin123</b></div>
   <div class="spark">✦</div>
 </div>
 
@@ -345,7 +391,7 @@ label{display:block;font-size:11.5px;font-weight:900;text-transform:uppercase;le
   <header>
     <div class="mark wordmark">Bocaditos</div>
     <div style="display:flex;align-items:center;gap:10px">
-      <div class="who"><b id="hName"></b><span id="hRol"></span><span style="color:#6B5A48">v2.6</span></div>
+      <div class="who"><b id="hName"></b><span id="hRol"></span><span style="color:#6B5A48">v2.7</span></div>
       <button class="out" onclick="salir()">Salir</button>
     </div>
   </header>
@@ -491,67 +537,74 @@ function pintarPublico(){
     <div><div class="n">${esc(p.nombre)}</div><div class="d">Paquete de 10 unidades</div></div>
     <div class="p">${money(p.precio)}<small>el paquete</small></div></div>`).join('')
     : `<p class="ayuda">${sinConexion?'⚠️ Sin conexión con el catálogo. Revisa tu internet.':'Cargando sabores…'}</p>`;
-  pintarTienda();
 }
 
-/* ---------- tienda virtual ---------- */
+/* ---------- ventana de pedido ---------- */
 let carrito={};
+let pedidoDatos={n:'',t:'',e:'domicilio',d:'',f:'',nota:''};
+
+function abrirPedido(){
+  if(!DB||!(DB.productos||[]).length) return toast('Cargando el catálogo, intenta en un momento');
+  $('pedidoModal').classList.remove('hide');
+  document.body.style.overflow='hidden';
+  pintarTienda();
+}
+function cerrarPedido(){
+  $('pedidoModal').classList.add('hide');
+  document.body.style.overflow='';
+}
 function cambiaCant(pid,d){
   carrito[pid]=Math.max(0,(carrito[pid]||0)+d);
   pintarTienda();
 }
-function pintarTienda(){
-  const box=$('pedidoBox'); if(!box) return;
-  const ps=DB.productos||[];
-  if(!ps.length){ box.innerHTML=`<div style="text-align:center;padding:20px 6px">
-    <div style="font-size:36px">${sinConexion?'⚠️':'⏳'}</div>
-    <p class="ayuda">${sinConexion?'No pudimos cargar el catálogo. Revisa tu conexión e intenta de nuevo.':'Cargando el catálogo…'}</p>
-    <button class="btn ghost" onclick="location.reload()">Reintentar</button></div>`; return; }
-  const ls=lineasPedido(), paq=ls.reduce((a,x)=>a+x.cantidad,0), tot=ls.reduce((a,x)=>a+x.total,0);
-  box.innerHTML=`
-  <div class="tienda">${ps.map(p=>{const q=carrito[p.id]||0;
-    return `<div class="item ${q?'sel':''}">
-      <div class="foto">🥟<div class="bad">10 UND</div></div>
-      <div class="cuerpo">
-        <div class="n">${esc(p.nombre)}</div>
-        <div class="d">Paquete de 10 · 40 g c/u</div>
-        <div class="pr">${money(p.precio)}</div>
-        <div class="step">
-          <button onclick="cambiaCant(${p.id},-1)">−</button>
-          <div class="q">${q}</div>
-          <button onclick="cambiaCant(${p.id},1)">+</button>
-        </div>
-      </div></div>`}).join('')}
-  </div>
-
-  <div class="carrito">
-    <div class="l">Paquetes<b>${num(paq)}</b></div>
-    <div class="l">Empanadas<b>${num(paq*10)}</b></div>
-    <div class="l big">Total<b>${money(tot)}</b></div>
-  </div>
-
-  <div style="margin-top:18px">
-    <div class="eyebrow">Tus datos</div>
-    <div class="f"><label>Nombre</label><input id="pdN" value="${esc(pedidoDatos.n||'')}" placeholder="Nombre y apellido" oninput="pedidoDatos.n=this.value"></div>
-    <div class="f"><label>Teléfono / WhatsApp</label><input id="pdT" type="tel" value="${esc(pedidoDatos.t||'')}" placeholder="(980) 000-0000" oninput="pedidoDatos.t=this.value"></div>
-    <div class="f"><label>¿Cómo lo quieres?</label><select id="pdE" onchange="pedidoDatos.e=this.value;pintarTienda()">
-      <option value="domicilio" ${pedidoDatos.e!='recoger'?'selected':''}>Domicilio</option>
-      <option value="recoger" ${pedidoDatos.e=='recoger'?'selected':''}>Paso a recogerlo</option></select></div>
-    ${pedidoDatos.e!='recoger'?`<div class="f"><label>Dirección de entrega</label><input id="pdD" value="${esc(pedidoDatos.d||'')}" placeholder="Calle, apto, ciudad" oninput="pedidoDatos.d=this.value"></div>`:''}
-    <div class="f"><label>¿Para qué día?</label><input id="pdF" type="date" value="${pedidoDatos.f||hoy()}" onchange="pedidoDatos.f=this.value"></div>
-    <div class="f"><label>Nota (opcional)</label><input id="pdNota" value="${esc(pedidoDatos.nota||'')}" placeholder="Alguna indicación" oninput="pedidoDatos.nota=this.value"></div>
-  </div>
-
-  <button class="btn wide" style="padding:16px;font-size:16px;border-radius:14px;margin-top:12px" onclick="enviarPedido()">Enviar pedido</button>
-  <p class="ayuda" style="text-align:center;margin:10px 0 0">Recibimos tu pedido al instante y te llamamos para confirmar.</p>`;
-}
-let pedidoDatos={n:'',t:'',e:'domicilio',d:'',f:'',nota:''};
 function lineasPedido(){
   return (DB.productos||[]).map(p=>{const q=carrito[p.id]||0;
     return {productoId:p.id,nombre:p.nombre,cantidad:q,precio:p.precio,total:q*p.precio};
   }).filter(x=>x.cantidad>0);
 }
+function pintarTienda(){
+  const box=$('pedidoBox'); if(!box) return;
+  const ps=DB.productos||[];
+  const d=pedidoDatos;
+  box.innerHTML=`
+  <div class="eyebrow">1 · Escoge tus paquetes</div>
+  <p class="ayuda">Cada paquete trae 10 empanadas de 40 g</p>
+  ${ps.map(p=>{const q=carrito[p.id]||0;
+    return `<div class="menu-item ${q?'sel':''}">
+      <div class="foto">${emojiDe(p.nombre)}</div>
+      <div class="info">
+        <div class="n">${esc(p.nombre)}</div>
+        <div class="d">Paquete de 10 unidades</div>
+        <div class="pr">${money(p.precio)}</div>
+      </div>
+      <div class="stepper">
+        <button onclick="cambiaCant(${p.id},-1)">−</button>
+        <div class="q">${q}</div>
+        <button onclick="cambiaCant(${p.id},1)">+</button>
+      </div></div>`}).join('')}
 
+  <div class="eyebrow" style="margin-top:20px">2 · Tus datos</div>
+  <div class="f"><label>Nombre</label><input id="pdN" value="${esc(d.n)}" placeholder="Nombre y apellido" oninput="pedidoDatos.n=this.value;pintarPie()"></div>
+  <div class="f"><label>Teléfono / WhatsApp</label><input id="pdT" type="tel" value="${esc(d.t)}" placeholder="(980) 000-0000" oninput="pedidoDatos.t=this.value;pintarPie()"></div>
+  <div class="f"><label>¿Cómo lo quieres?</label><select id="pdE" onchange="pedidoDatos.e=this.value;pintarTienda()">
+    <option value="domicilio" ${d.e!='recoger'?'selected':''}>Domicilio</option>
+    <option value="recoger" ${d.e=='recoger'?'selected':''}>Paso a recogerlo</option></select></div>
+  ${d.e!='recoger'?`<div class="f"><label>Dirección de entrega</label><input id="pdD" value="${esc(d.d)}" placeholder="Calle, apto, ciudad" oninput="pedidoDatos.d=this.value;pintarPie()"></div>`:''}
+  <div class="f"><label>¿Para qué día?</label><input id="pdF" type="date" value="${d.f||hoy()}" onchange="pedidoDatos.f=this.value"></div>
+  <div class="f"><label>Nota (opcional)</label><input id="pdNota" value="${esc(d.nota)}" placeholder="Alguna indicación" oninput="pedidoDatos.nota=this.value"></div>
+  <div style="height:6px"></div>`;
+  pintarPie();
+}
+function pintarPie(){
+  const f=$('pedidoFoot'); if(!f) return;
+  const ls=lineasPedido(), paq=ls.reduce((a,x)=>a+x.cantidad,0), tot=ls.reduce((a,x)=>a+x.total,0);
+  const d=pedidoDatos;
+  const listo = paq>0 && d.n.trim() && d.t.trim() && (d.e=='recoger'||d.d.trim());
+  f.innerHTML=`<div class="res">
+    <div><div class="l">${num(paq)} paquetes · ${num(paq*10)} empanadas</div><div class="v">${money(tot)}</div></div>
+  </div>
+  <button class="env" ${listo?'':'disabled'} onclick="enviarPedido()">${paq?'Enviar pedido':'Escoge tus paquetes'}</button>`;
+}
 async function enviarPedido(){
   const d=pedidoDatos, ls=lineasPedido();
   if(!d.n||!d.t) return toast('Escribe tu nombre y teléfono');
@@ -564,16 +617,15 @@ async function enviarPedido(){
   if(!DB.pedidos) DB.pedidos=[];
   DB.pedidos.push(ped);
   try{ await guardar(); }catch(e){}
-
   carrito={}; pedidoDatos={n:'',t:'',e:'domicilio',d:'',f:'',nota:''};
-  $('pedidoBox').innerHTML=`<div style="text-align:center;padding:22px 6px">
-    <div style="font-size:46px">✅</div>
-    <h3 style="font-size:21px;margin:8px 0">¡Pedido recibido!</h3>
+  $('pedidoBox').innerHTML=`<div style="text-align:center;padding:34px 10px">
+    <div style="font-size:52px">✅</div>
+    <h3 style="font-size:22px;margin:10px 0 4px">¡Pedido recibido!</h3>
     <div class="eyebrow">Pedido #${ped.id}</div>
-    <p class="ayuda">Gracias ${esc(ped.cliente)}. Ya quedó registrado por ${money(ped.total)} y te contactamos al ${esc(ped.telefono)} para confirmarlo.</p>
-    <a class="wa" style="display:block;text-align:center;text-decoration:none;box-sizing:border-box" href="https://wa.me/19804226218" target="_blank">¿Dudas? Escríbenos por WhatsApp</a>
-    <button class="btn ghost wide" style="margin-top:10px" onclick="pintarTienda()">Hacer otro pedido</button>
+    <p class="ayuda" style="max-width:340px;margin:10px auto 0">Gracias ${esc(ped.cliente)}. Tu pedido por ${money(ped.total)} quedó registrado y te contactamos al ${esc(ped.telefono)} para confirmarlo.</p>
+    <a class="btn" style="display:inline-block;text-decoration:none;background:#25D366;margin-top:16px" href="https://wa.me/19804226218" target="_blank">Escríbenos por WhatsApp</a>
   </div>`;
+  $('pedidoFoot').innerHTML=`<button class="env" onclick="cerrarPedido()">Cerrar</button>`;
   toast('¡Pedido registrado!');
 }
 
