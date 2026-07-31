@@ -165,6 +165,13 @@ label{display:block;font-size:11.5px;font-weight:900;text-transform:uppercase;le
 .f input:focus,.f select:focus{border-color:var(--terracota);background:#fff}
 
 /* modal */
+.chks{display:flex;flex-wrap:wrap;gap:6px}
+.chk{display:flex;align-items:center;gap:6px;border:1.5px solid var(--linea);background:var(--papel);
+  border-radius:20px;padding:7px 12px;font-size:13px;font-weight:800;cursor:pointer;color:var(--tinta-3);
+  text-transform:none;letter-spacing:0;margin:0}
+.chk input{margin:0;width:16px;height:16px;accent-color:var(--terracota)}
+.chk.on{border-color:var(--terracota);background:#F9EAE0;color:var(--terracota-d)}
+
 #modal{position:fixed;inset:0;z-index:80;background:rgba(23,18,14,.55);display:flex;align-items:flex-end;justify-content:center}
 #modal .box{background:var(--papel);width:100%;max-width:560px;border-radius:20px 20px 0 0;padding:18px 16px calc(20px + env(safe-area-inset-bottom));max-height:92vh;overflow:auto}
 @media(min-width:600px){#modal{align-items:center}#modal .box{border-radius:20px}}
@@ -210,7 +217,7 @@ label{display:block;font-size:11.5px;font-weight:900;text-transform:uppercase;le
     <div id="loginErr"></div>
     <button type="submit">Entrar</button>
   </form>
-  <div class="hint"><b style="color:#C9B79C">Versión 1.3</b> · <span id="estado">Conectando…</span><br><br>Primer ingreso — administrador<br><b>admin</b> / <b>admin123</b></div>
+  <div class="hint"><b style="color:#C9B79C">Versión 1.4</b> · <span id="estado">Conectando…</span><br><br>Primer ingreso — administrador<br><b>admin</b> / <b>admin123</b></div>
   <div class="spark">✦</div>
 </div>
 
@@ -219,7 +226,7 @@ label{display:block;font-size:11.5px;font-weight:900;text-transform:uppercase;le
   <header>
     <div class="mark wordmark">Bocaditos</div>
     <div style="display:flex;align-items:center;gap:10px">
-      <div class="who"><b id="hName"></b><span id="hRol"></span><span style="color:#6B5A48">v1.3</span></div>
+      <div class="who"><b id="hName"></b><span id="hRol"></span><span style="color:#6B5A48">v1.4</span></div>
       <button class="out" onclick="salir()">Salir</button>
     </div>
   </header>
@@ -646,8 +653,9 @@ function vProduccion(){
         return `<div class="row"><div class="g"><div class="t">${esc(u?u.nombre:'—')}</div><div class="s">${money(m.valorHora)} por hora</div></div><div class="n">${num(m.horas)} h<small>${money(m.horas*m.valorHora)}</small></div></div>`}).join('')
         : '<p style="font-size:13px;color:var(--tinta-3)">Sin mano de obra registrada.</p>'}
       <div class="eyebrow" style="margin-top:10px">Insumos consumidos</div>
-      ${l.consumos.map(c=>{const i=insumo(c.insumoId); const d=c.destino?producto(c.destino):null;
-        return `<div class="row"><div class="g"><div class="t">${esc(i?i.nombre:'—')}</div><div class="s">${d?'solo '+esc(d.nombre):'común'}</div></div><div class="n">${num(c.cantidad)} ${i?UNIC[i.unidad]:''}<small>${money(c.cantidad*c.precio)}</small></div></div>`}).join('')}
+      ${l.consumos.map(c=>{const i=insumo(c.insumoId);
+        const ds=(c.destinos||[]).map(id=>{const p=producto(id);return p?p.nombre:''}).filter(Boolean);
+        return `<div class="row"><div class="g"><div class="t">${esc(i?i.nombre:'—')}</div><div class="s">${ds.length?esc(ds.join(' · ')):'todos'}</div></div><div class="n">${num(c.cantidad)} ${i?UNIC[i.unidad]:''}<small>${money(c.cantidad*c.precio)}</small></div></div>`}).join('')}
     </div>`;
   }).join('') : `<div class="card">${vacio('🔥','Registra el primer lote de producción del día.')}</div>`;
   return h;
@@ -661,7 +669,7 @@ function formLote(){
   <div class="f"><label>Fecha del lote</label><input id="lF" type="date" value="${hoy()}"></div>
 
   <div class="eyebrow">1 · Insumos que se usaron</div>
-  <p style="font-size:12.5px;color:var(--tinta-3);margin:0 0 8px">Carga la masa, el maíz y demás como <b>común</b>. El relleno (pollo, carne, queso) cárgalo <b>a su tipo</b> para que solo encarezca esa empanada.</p>
+  <p style="font-size:12.5px;color:var(--tinta-3);margin:0 0 8px">Marca para qué tipos se usó cada insumo. La masa o el maíz normalmente van marcados para los tres; el relleno solo para el suyo.</p>
   <div id="cBox"></div>
   <div class="grid2" style="gap:8px;margin:4px 0 16px">
     <button class="btn sm ghost" onclick="addCons()">＋ Insumo</button>
@@ -683,12 +691,17 @@ function formLote(){
 }
 function leerLote(){
   pTmp.forEach((x,i)=>{const s=$('pP'+i);if(s){x.productoId=+s.value;x.cantidad=+$('pQ'+i).value||0}});
-  cTmp.forEach((x,i)=>{const s=$('cI'+i);if(s){x.insumoId=+s.value;x.cantidad=+$('cQ'+i).value||0;x.destino=+$('cD'+i).value||0}});
+  cTmp.forEach((x,i)=>{const s=$('cI'+i);if(!s)return;
+    x.insumoId=+s.value; x.cantidad=+$('cQ'+i).value||0;
+    const d=[]; DB.productos.forEach(p=>{const c=$('cD'+i+'_'+p.id); if(c&&c.checked) d.push(p.id);});
+    x.destinos=d;
+  });
   mTmp.forEach((x,i)=>{const s=$('mE'+i);if(s){x.empleadoId=+s.value;x.horas=+$('mH'+i).value||0}});
 }
 function addProd(){leerLote();pTmp.push({productoId:DB.productos[0].id,cantidad:0});pintarLote()}
 function delProd(i){leerLote();pTmp.splice(i,1);pintarLote()}
-function addCons(){if(!DB.insumos.length)return toast('No hay insumos');leerLote();cTmp.push({insumoId:DB.insumos[0].id,cantidad:0,destino:0});pintarLote()}
+function addCons(){if(!DB.insumos.length)return toast('No hay insumos');leerLote();
+  cTmp.push({insumoId:DB.insumos[0].id,cantidad:0,destinos:DB.productos.map(p=>p.id)});pintarLote()}
 function delCons(i){leerLote();cTmp.splice(i,1);pintarLote()}
 function addMano(){const e=DB.usuarios.filter(u=>puedeProducir(u));if(!e.length)return toast('No hay empleados de producción');leerLote();mTmp.push({empleadoId:e[0].id,horas:0});pintarLote()}
 function delMano(i){leerLote();mTmp.splice(i,1);pintarLote()}
@@ -698,7 +711,7 @@ function cargarRecetas(){
   const lineas=[];
   pTmp.forEach(x=>{const p=producto(x.productoId); if(!p||!x.cantidad)return;
     p.receta.forEach(r=>{
-      lineas.push({insumoId:r.insumoId, cantidad:Math.round(r.cantidad*x.cantidad*100)/100, destino:p.id});
+      lineas.push({insumoId:r.insumoId, cantidad:Math.round(r.cantidad*x.cantidad*100)/100, destinos:[p.id]});
     })});
   if(!lineas.length) return toast('Primero escribe los paquetes producidos');
   cTmp=lineas; pintarLote(); toast('Insumos cargados desde las recetas');
@@ -715,12 +728,13 @@ function pintarLote(){
     return `<div style="border:1px solid var(--linea);border-radius:12px;padding:10px;margin-bottom:8px;background:#fff">
     <div class="f" style="margin-bottom:8px"><label>Insumo <span style="color:var(--terracota)">disp. ${ins?num(ins.stock)+' '+UNIC[ins.unidad]:''}</span></label>
       <select id="cI${i}" onchange="leerLote();pintarLote()">${DB.insumos.map(s=>`<option value="${s.id}" ${s.id==x.insumoId?'selected':''}>${esc(s.nombre)} (${UNIC[s.unidad]})</option>`).join('')}</select></div>
-    <div class="linea-item" style="margin-bottom:0">
-      <div class="f" style="max-width:100px"><label>Cantidad</label><input id="cQ${i}" type="number" step="0.01" value="${x.cantidad}" oninput="leerLote();pintarLoteTot()"></div>
-      <div class="f"><label>Se carga a</label><select id="cD${i}" onchange="leerLote();pintarLoteTot()">
-        <option value="0" ${!x.destino?'selected':''}>Común (todos)</option>
-        ${DB.productos.map(p=>`<option value="${p.id}" ${p.id==x.destino?'selected':''}>Solo ${esc(p.nombre)}</option>`).join('')}</select></div>
-      <button class="del" onclick="delCons(${i})">×</button></div></div>`}).join('')
+    <div class="linea-item" style="margin-bottom:10px">
+      <div class="f" style="max-width:110px;margin-bottom:0"><label>Cantidad</label><input id="cQ${i}" type="number" step="0.01" value="${x.cantidad}" oninput="leerLote();pintarLoteTot()"></div>
+      <button class="del" onclick="delCons(${i})">×</button></div>
+    <label>Se usó para</label>
+    <div class="chks">${DB.productos.map(p=>{const on=(x.destinos||[]).includes(p.id);
+      return `<label class="chk ${on?'on':''}"><input type="checkbox" id="cD${i}_${p.id}" ${on?'checked':''} onchange="leerLote();pintarLote()">${esc(p.nombre)}</label>`}).join('')}</div>
+    </div>`}).join('')
     : '<p style="font-size:13px;color:var(--tinta-3);margin:0 0 6px">Agrega los insumos o cárgalos desde la receta.</p>';
 
   $('mBox').innerHTML=mTmp.length? mTmp.map((x,i)=>`<div class="linea-item">
@@ -731,37 +745,47 @@ function pintarLote(){
   pintarLoteTot();
 }
 
-/* Costo común (masa, maíz, mano de obra) se reparte entre todos los paquetes.
-   Costo del relleno se carga solo al tipo de empanada al que pertenece.      */
+/* Cada insumo se reparte SOLO entre los tipos marcados, en proporción a los
+   paquetes de cada uno. La mano de obra se reparte entre todos los paquetes. */
 function calcLote(){
   const val=x=>{const i=insumo(x.insumoId); return i? i.precio*x.cantidad : 0;};
-  const comun=cTmp.filter(x=>!x.destino).reduce((a,x)=>a+val(x),0);
-  const espec={};
-  cTmp.filter(x=>x.destino).forEach(x=>{ espec[x.destino]=(espec[x.destino]||0)+val(x); });
-  const cm=mTmp.reduce((a,x)=>{const u=usuario(x.empleadoId);return a+((u?u.vhProd:0)*x.horas)},0);
-  const paq=pTmp.reduce((a,x)=>a+x.cantidad,0);
-  const comunTotal=comun+cm;
-  const porPaqComun= paq? comunTotal/paq : 0;
-  const detalle=pTmp.filter(x=>x.cantidad>0).map(x=>{
-    const e=espec[x.productoId]||0;
-    const unit=porPaqComun + e/x.cantidad;
-    return {productoId:x.productoId, cantidad:x.cantidad, costoUnit:unit, especifico:e};
+  const prods=pTmp.filter(x=>x.cantidad>0);
+  const paqDe=id=>prods.filter(x=>x.productoId==id).reduce((a,x)=>a+x.cantidad,0);
+  const paqTotal=prods.reduce((a,x)=>a+x.cantidad,0);
+  const porPaq={}, aporte={};
+  prods.forEach(x=>{porPaq[x.productoId]=0; aporte[x.productoId]=0;});
+
+  cTmp.forEach(x=>{
+    const v=val(x); if(!v) return;
+    let S=(x.destinos&&x.destinos.length)? x.destinos : prods.map(p=>p.productoId);
+    S=S.filter(id=>paqDe(id)>0);
+    const paqS=S.reduce((a,id)=>a+paqDe(id),0);
+    if(!paqS) return;
+    S.forEach(id=>{ porPaq[id]+= v/paqS; aporte[id]+= (v/paqS)*paqDe(id); });
   });
-  const ci=comun+Object.values(espec).reduce((a,b)=>a+b,0);
-  return {ci,cm,comun,espec,total:ci+cm,paq,porPaqComun,detalle};
+
+  const cm=mTmp.reduce((a,x)=>{const u=usuario(x.empleadoId);return a+((u?u.vhProd:0)*x.horas)},0);
+  if(paqTotal) prods.forEach(x=>{ porPaq[x.productoId]+= cm/paqTotal; });
+
+  const ci=cTmp.reduce((a,x)=>a+val(x),0);
+  const detalle=[];
+  const vistos={};
+  prods.forEach(x=>{ if(vistos[x.productoId])return; vistos[x.productoId]=1;
+    detalle.push({productoId:x.productoId, cantidad:paqDe(x.productoId), costoUnit:porPaq[x.productoId]||0});
+  });
+  return {ci,cm,total:ci+cm,paq:paqTotal,detalle};
 }
 function pintarLoteTot(){
   const c=calcLote();
   let h=`<div class="tot">
-    <div class="l">Insumos comunes<b>${money(c.comun)}</b></div>
-    <div class="l">Rellenos por tipo<b>${money(c.ci-c.comun)}</b></div>
+    <div class="l">Costo de insumos<b>${money(c.ci)}</b></div>
     <div class="l">Mano de obra<b>${money(c.cm)}</b></div>
     <div class="l">Paquetes producidos<b>${num(c.paq)}</b></div>
     <div class="l big">Costo total del lote<b>${money(c.total)}</b></div></div>`;
   if(c.detalle.length){
     h+='<div class="card"><h3>Costo por paquete de este lote</h3>';
     h+=c.detalle.map(d=>{const p=producto(d.productoId);
-      return `<div class="row"><div class="g"><div class="t">${esc(p?p.nombre:'—')}</div><div class="s">${d.cantidad} paq · relleno ${money(d.especifico)}</div></div>
+      return `<div class="row"><div class="g"><div class="t">${esc(p?p.nombre:'—')}</div><div class="s">${d.cantidad} paquetes</div></div>
       <div class="n">${money(d.costoUnit)}<small>${money(d.costoUnit/10)} c/empanada</small></div></div>`}).join('');
     h+='</div>';
   }
