@@ -172,6 +172,11 @@ label{display:block;font-size:11.5px;font-weight:900;text-transform:uppercase;le
 .chk input{margin:0;width:16px;height:16px;accent-color:var(--terracota)}
 .chk.on{border-color:var(--terracota);background:#F9EAE0;color:var(--terracota-d)}
 
+.pw{position:relative}
+.pw .eye{position:absolute;right:6px;top:50%;transform:translateY(-50%);background:none;border:none;
+  font-size:19px;cursor:pointer;padding:6px 8px;line-height:1;opacity:.65}
+#login .pw .eye{color:var(--crema)}
+
 #modal{position:fixed;inset:0;z-index:80;background:rgba(23,18,14,.55);display:flex;align-items:flex-end;justify-content:center}
 #modal .box{background:var(--papel);width:100%;max-width:560px;border-radius:20px 20px 0 0;padding:18px 16px calc(20px + env(safe-area-inset-bottom));max-height:92vh;overflow:auto}
 @media(min-width:600px){#modal{align-items:center}#modal .box{border-radius:20px}}
@@ -213,11 +218,11 @@ label{display:block;font-size:11.5px;font-weight:900;text-transform:uppercase;le
   <div class="sub">Gestión de producción y ventas</div>
   <form id="loginForm" autocomplete="off">
     <input id="lu" placeholder="Usuario" autocapitalize="none">
-    <input id="lp" type="password" placeholder="Contraseña">
+    <div class="pw"><input id="lp" type="password" placeholder="Contraseña"><button type="button" class="eye" onclick="verClave('lp',this)">👁</button></div>
     <div id="loginErr"></div>
     <button type="submit">Entrar</button>
   </form>
-  <div class="hint"><b style="color:#C9B79C">Versión 1.4</b> · <span id="estado">Conectando…</span><br><br>Primer ingreso — administrador<br><b>admin</b> / <b>admin123</b></div>
+  <div class="hint"><b style="color:#C9B79C">Versión 1.5</b> · <span id="estado">Conectando…</span><br><br>Primer ingreso — administrador<br><b>admin</b> / <b>admin123</b></div>
   <div class="spark">✦</div>
 </div>
 
@@ -226,7 +231,7 @@ label{display:block;font-size:11.5px;font-weight:900;text-transform:uppercase;le
   <header>
     <div class="mark wordmark">Bocaditos</div>
     <div style="display:flex;align-items:center;gap:10px">
-      <div class="who"><b id="hName"></b><span id="hRol"></span><span style="color:#6B5A48">v1.4</span></div>
+      <div class="who"><b id="hName"></b><span id="hRol"></span><span style="color:#6B5A48">v1.5</span></div>
       <button class="out" onclick="salir()">Salir</button>
     </div>
   </header>
@@ -311,6 +316,12 @@ const UNIC={g:'g',ml:'ml',und:'und'};
 const ROL={admin:'Administrador',produccion:'Producción',vendedor:'Vendedor',ambos:'Producción y ventas'};
 
 function toast(t){ const e=$('toast'); e.textContent=t; e.classList.add('on'); setTimeout(()=>e.classList.remove('on'),2200); }
+function verClave(id,btn){
+  const i=$(id); if(!i) return;
+  const ver = i.type==='password';
+  i.type = ver ? 'text' : 'password';
+  btn.textContent = ver ? '🙈' : '👁';
+}
 function abrirModal(titulo,html){ $('mTitle').textContent=titulo; $('mBody').innerHTML=html; $('modal').classList.remove('hide'); }
 function cerrarModal(){ $('modal').classList.add('hide'); $('mBody').innerHTML=''; }
 
@@ -640,6 +651,7 @@ function vProduccion(){
         <span class="pill t">${num(paq)} paquetes</span>
       </div>
       <div class="sello"><div class="l">Costo del lote</div><div class="v">${money(l.costoTotal)}</div><div class="s">${num(paq*10)} empanadas</div></div>
+      ${l.proyectado?`<div class="row"><div class="g"><div class="t">Proyectado vs. real</div><div class="s">se planearon ${num(l.proyectado)} paquetes</div></div><div class="n" style="color:${paq>=l.proyectado?'var(--verde)':'var(--rojo)'}">${(paq/l.proyectado*100).toFixed(0)}%<small>${num(paq)} salieron</small></div></div>`:''}
       <div class="tot">
         <div class="l">Insumos<b>${money(l.costoInsumos)}</b></div>
         <div class="l">Mano de obra<b>${money(l.costoMano)}</b></div>
@@ -666,7 +678,11 @@ function formLote(){
   if(!DB.productos.length) return toast('Primero crea los productos');
   cTmp=[]; pTmp=[]; mTmp=[];
   abrirModal('Nuevo lote de producción',`
-  <div class="f"><label>Fecha del lote</label><input id="lF" type="date" value="${hoy()}"></div>
+  <div class="grid2">
+    <div class="f"><label>Fecha del lote</label><input id="lF" type="date" value="${hoy()}"></div>
+    <div class="f"><label>Paquetes proyectados</label><input id="lProy" type="number" value="0" placeholder="0" oninput="pintarLote()"></div>
+  </div>
+  <p style="font-size:12.5px;color:var(--tinta-3);margin:-4px 0 14px">Escribe cuántos paquetes piensan sacar. Con el histórico de lotes anteriores te sugerimos cuánto de cada insumo necesitan.</p>
 
   <div class="eyebrow">1 · Insumos que se usaron</div>
   <p style="font-size:12.5px;color:var(--tinta-3);margin:0 0 8px">Marca para qué tipos se usó cada insumo. La masa o el maíz normalmente van marcados para los tres; el relleno solo para el suyo.</p>
@@ -717,6 +733,23 @@ function cargarRecetas(){
   cTmp=lineas; pintarLote(); toast('Insumos cargados desde las recetas');
 }
 
+/* Promedio histórico de consumo de un insumo por paquete producido */
+function consumoPorPaquete(insumoId){
+  let cant=0, paq=0;
+  DB.lotes.forEach(l=>{
+    const c=l.consumos.filter(x=>x.insumoId==insumoId).reduce((a,x)=>a+x.cantidad,0);
+    if(!c) return;
+    const p=l.producidos.reduce((a,x)=>a+x.cantidad,0);
+    if(p>0){ cant+=c; paq+=p; }
+  });
+  return paq? cant/paq : 0;
+}
+function sugerido(insumoId){
+  const proy=+($('lProy')?$('lProy').value:0)||0;
+  if(!proy) return 0;
+  return consumoPorPaquete(insumoId)*proy;
+}
+
 function pintarLote(){
   const emp=DB.usuarios.filter(u=>puedeProducir(u));
   $('pBox').innerHTML=pTmp.map((x,i)=>`<div class="linea-item">
@@ -725,12 +758,14 @@ function pintarLote(){
     <button class="del" onclick="delProd(${i})">×</button></div>`).join('');
 
   $('cBox').innerHTML=cTmp.length? cTmp.map((x,i)=>{const ins=insumo(x.insumoId);
+    const sug=sugerido(x.insumoId);
     return `<div style="border:1px solid var(--linea);border-radius:12px;padding:10px;margin-bottom:8px;background:#fff">
     <div class="f" style="margin-bottom:8px"><label>Insumo <span style="color:var(--terracota)">disp. ${ins?num(ins.stock)+' '+UNIC[ins.unidad]:''}</span></label>
       <select id="cI${i}" onchange="leerLote();pintarLote()">${DB.insumos.map(s=>`<option value="${s.id}" ${s.id==x.insumoId?'selected':''}>${esc(s.nombre)} (${UNIC[s.unidad]})</option>`).join('')}</select></div>
-    <div class="linea-item" style="margin-bottom:10px">
-      <div class="f" style="max-width:110px;margin-bottom:0"><label>Cantidad</label><input id="cQ${i}" type="number" step="0.01" value="${x.cantidad}" oninput="leerLote();pintarLoteTot()"></div>
+    <div class="linea-item" style="margin-bottom:${sug?4:10}px">
+      <div class="f" style="max-width:130px;margin-bottom:0"><label>Cantidad</label><input id="cQ${i}" type="number" step="0.01" value="${x.cantidad}" placeholder="${sug?num(Math.round(sug)):'0'}" oninput="leerLote();pintarLoteTot()"></div>
       <button class="del" onclick="delCons(${i})">×</button></div>
+    ${sug?`<p style="font-size:12px;color:var(--terracota);font-weight:800;margin:0 0 10px">Sugerido: ${num(Math.round(sug))} ${ins?UNIC[ins.unidad]:''} <button class="btn sm ghost" style="padding:4px 9px;margin-left:6px" onclick="usarSugerido(${i})">Usar</button></p>`:''}
     <label>Se usó para</label>
     <div class="chks">${DB.productos.map(p=>{const on=(x.destinos||[]).includes(p.id);
       return `<label class="chk ${on?'on':''}"><input type="checkbox" id="cD${i}_${p.id}" ${on?'checked':''} onchange="leerLote();pintarLote()">${esc(p.nombre)}</label>`}).join('')}</div>
@@ -743,6 +778,11 @@ function pintarLote(){
     <button class="del" onclick="delMano(${i})">×</button></div>`).join('')
     : '<p style="font-size:13px;color:var(--tinta-3);margin:0 0 6px">Agrega quiénes trabajaron en este lote.</p>';
   pintarLoteTot();
+}
+function usarSugerido(i){
+  leerLote();
+  cTmp[i].cantidad=Math.round(sugerido(cTmp[i].insumoId)*100)/100;
+  pintarLote();
 }
 
 /* Cada insumo se reparte SOLO entre los tipos marcados, en proporción a los
@@ -777,10 +817,13 @@ function calcLote(){
 }
 function pintarLoteTot(){
   const c=calcLote();
+  const proy=+($('lProy')?$('lProy').value:0)||0;
   let h=`<div class="tot">
     <div class="l">Costo de insumos<b>${money(c.ci)}</b></div>
     <div class="l">Mano de obra<b>${money(c.cm)}</b></div>
-    <div class="l">Paquetes producidos<b>${num(c.paq)}</b></div>
+    ${proy?`<div class="l">Proyectado<b>${num(proy)} paquetes</b></div>`:''}
+    <div class="l">Salieron realmente<b>${num(c.paq)} paquetes</b></div>
+    ${proy&&c.paq?`<div class="l">Rendimiento<b>${(c.paq/proy*100).toFixed(0)}%</b></div>`:''}
     <div class="l big">Costo total del lote<b>${money(c.total)}</b></div></div>`;
   if(c.detalle.length){
     h+='<div class="card"><h3>Costo por paquete de este lote</h3>';
@@ -809,6 +852,7 @@ async function guardarLote(){
   });
   DB.lotes.push({
     id:nid(), fecha:$('lF').value||hoy(), creado:new Date().toISOString(),
+    proyectado:+($('lProy')?$('lProy').value:0)||0,
     consumos:cons.map(x=>({...x,precio:insumo(x.insumoId).precio})),
     producidos:c.detalle.map(d=>({...d,costoUnit:Math.round(d.costoUnit)})),
     mano:mTmp.filter(x=>x.horas>0).map(x=>({empleadoId:x.empleadoId,horas:x.horas,valorHora:usuario(x.empleadoId).vhProd||0})),
@@ -881,7 +925,7 @@ function formEmpleado(id){
   <p style="font-size:12.5px;color:var(--tinta-3);margin:-4px 0 12px">Las ventas no se pagan por hora: el vendedor gana la comisión del producto.</p>
   <div class="grid2">
     <div class="f"><label>Usuario</label><input id="uU" value="${u?esc(u.usuario):''}" autocapitalize="none" placeholder="maria"></div>
-    <div class="f"><label>Contraseña</label><input id="uP" value="${u?esc(u.clave):''}" placeholder="clave"></div>
+    <div class="f"><label>Contraseña</label><div class="pw"><input id="uP" type="password" value="${u?esc(u.clave):''}" placeholder="clave"><button type="button" class="eye" onclick="verClave('uP',this)">👁</button></div></div>
   </div>
   <button class="btn wide" onclick="guardarEmpleado(${id||0})">Guardar persona</button>
   ${u&&u.id!=1?`<button class="btn wide ghost" style="margin-top:8px;border-color:var(--rojo);color:var(--rojo)" onclick="borrarEmpleado(${u.id})">Eliminar</button>`:''}`);
