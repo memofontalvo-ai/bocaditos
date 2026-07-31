@@ -41,6 +41,63 @@ h1,h2,h3{margin:0;line-height:1.2}
 .wordmark{font-family:'Pacifico',cursive;color:var(--crema);letter-spacing:.5px;font-weight:400}
 .hide{display:none !important}
 
+
+/* ============ PÁGINA PÚBLICA ============ */
+#publico{position:fixed;inset:0;z-index:90;overflow-y:auto;background:var(--papel);-webkit-overflow-scrolling:touch}
+#publico .top{position:sticky;top:0;z-index:5;background:var(--masa);display:flex;align-items:center;
+  justify-content:space-between;padding:calc(12px + env(safe-area-inset-top)) 16px 12px;gap:10px}
+#publico .top .mark{font-size:26px}
+#publico .corp{background:none;border:1.5px solid #4A3B2C;color:var(--crema);border-radius:20px;
+  padding:8px 13px;font-size:12px;font-weight:800;cursor:pointer;white-space:nowrap}
+#publico .corp:active{background:var(--terracota);border-color:var(--terracota)}
+
+#publico .hero{background:radial-gradient(120% 80% at 50% 0%, #D9762F 0%, #B14A16 60%, #8E3A10 100%);
+  color:#fff;padding:34px 20px 40px;text-align:center;position:relative;overflow:hidden}
+#publico .hero .flag{position:absolute;top:0;right:0;width:70px;height:70px;
+  background:linear-gradient(135deg,#FFD100 0 45%,#003893 45% 72%,#CE1126 72% 100%);
+  clip-path:polygon(100% 0,0 0,100% 100%)}
+#publico .hero h1{font-family:'Pacifico',cursive;font-size:clamp(38px,11vw,54px);color:var(--crema);
+  text-shadow:0 4px 0 rgba(0,0,0,.22);font-weight:400;margin-bottom:2px}
+#publico .hero .tag{font-size:13.5px;letter-spacing:3px;text-transform:uppercase;font-weight:900;color:#FFE9C7;margin-bottom:18px}
+#publico .sello100{display:inline-flex;flex-direction:column;align-items:center;justify-content:center;
+  width:92px;height:92px;border-radius:50%;background:var(--crema);color:var(--terracota-d);
+  border:3px dashed var(--terracota-d);font-weight:900;line-height:1;margin-bottom:16px}
+#publico .sello100 b{font-size:24px}
+#publico .sello100 span{font-size:10px;letter-spacing:1.5px;margin-top:2px}
+#publico .hero p.lead{font-size:15px;color:#FFEBD4;max-width:420px;margin:0 auto 20px;line-height:1.5}
+#publico .cta{display:flex;gap:10px;justify-content:center;flex-wrap:wrap}
+#publico .cta button,#publico .cta a{border:none;border-radius:26px;padding:14px 22px;font-weight:900;
+  font-size:15px;cursor:pointer;text-decoration:none;display:inline-block}
+#publico .cta .b1{background:var(--masa);color:var(--crema)}
+#publico .cta .b2{background:#25D366;color:#fff}
+
+#publico .sec{padding:26px 16px;max-width:760px;margin:0 auto}
+#publico .sec h2{font-size:22px;font-weight:900;margin-bottom:4px}
+#publico .sec .sub{color:var(--tinta-3);font-size:13.5px;margin-bottom:16px}
+#publico .prod{background:#fff;border:1px solid var(--linea);border-radius:16px;padding:16px;
+  margin-bottom:10px;display:flex;align-items:center;gap:14px;box-shadow:var(--sh)}
+#publico .prod .ic{width:54px;height:54px;border-radius:14px;background:linear-gradient(135deg,#F6C177,#E09A3E);
+  display:flex;align-items:center;justify-content:center;font-size:27px;flex-shrink:0}
+#publico .prod .n{font-weight:900;font-size:16px}
+#publico .prod .d{font-size:12.5px;color:var(--tinta-3)}
+#publico .prod .p{margin-left:auto;text-align:right;font-weight:900;font-size:19px;white-space:nowrap}
+#publico .prod .p small{display:block;font-size:10.5px;color:var(--tinta-3);font-weight:800;text-transform:uppercase}
+
+#publico .prep{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+#publico .prep .c{background:var(--masa);color:var(--crema);border-radius:16px;padding:16px;text-align:center}
+#publico .prep .c .e{font-size:26px}
+#publico .prep .c .t{font-weight:900;font-size:14px;margin-top:4px}
+#publico .prep .c .v{font-size:21px;font-weight:900;color:var(--ambar)}
+#publico .prep .c .s{font-size:11.5px;color:#A08D74;font-weight:700}
+#publico .datos{background:var(--papel-2);border-radius:16px;padding:14px;margin-top:10px}
+#publico .datos div{display:flex;justify-content:space-between;padding:6px 0;font-size:13.5px;font-weight:700}
+#publico .datos div span{color:var(--tinta-3)}
+
+#publico .pedido{background:#fff;border:1px solid var(--linea);border-radius:18px;padding:16px;box-shadow:var(--sh)}
+#publico footer{background:var(--masa);color:#A08D74;text-align:center;padding:26px 16px calc(26px + env(safe-area-inset-bottom));font-size:12.5px}
+#publico footer .mark{font-size:26px;margin-bottom:8px}
+#publico footer a{color:var(--crema);font-weight:900;text-decoration:none;font-size:16px}
+
 /* ---------- LOGIN ---------- */
 #login{
   position:fixed;inset:0;z-index:100;
@@ -215,8 +272,61 @@ label{display:block;font-size:11.5px;font-weight:900;text-transform:uppercase;le
 </head>
 <body>
 
+<!-- ============ PÁGINA PÚBLICA ============ -->
+<div id="publico">
+  <div class="top">
+    <div class="mark wordmark">Bocaditos</div>
+    <button class="corp" onclick="irCorporativo()">🔒 Acceso corporativo</button>
+  </div>
+
+  <div class="hero">
+    <div class="flag"></div>
+    <div class="sello100"><b>100%</b><span>MAÍZ</span></div>
+    <h1>Bocaditos</h1>
+    <div class="tag">Sabor de nuestra tierra</div>
+    <p class="lead">Empanadas colombianas de maíz, hechas a mano y congeladas para que las disfrutes recién hechas en tu casa.</p>
+    <div class="cta">
+      <button class="b1" onclick="document.getElementById('formPedido').scrollIntoView({behavior:'smooth'})">Hacer un pedido</button>
+      <a class="b2" href="https://wa.me/19804226218" target="_blank">WhatsApp</a>
+    </div>
+  </div>
+
+  <div class="sec">
+    <h2>Nuestros sabores</h2>
+    <div class="sub">Cada paquete trae 10 empanadas congeladas de 40 g</div>
+    <div id="pubProds"></div>
+  </div>
+
+  <div class="sec" style="padding-top:0">
+    <h2>Cómo prepararlas</h2>
+    <div class="sub">Del congelador a la mesa en minutos</div>
+    <div class="prep">
+      <div class="c"><div class="e">🌬️</div><div class="t">Air Fryer</div><div class="v">400°F</div><div class="s">15 minutos</div></div>
+      <div class="c"><div class="e">🍳</div><div class="t">Fritas</div><div class="v">350°F</div><div class="s">5 minutos</div></div>
+    </div>
+    <div class="datos">
+      <div><span>Contenido</span><b>10 unidades</b></div>
+      <div><span>Peso neto</span><b>40 g (0.3 oz) c/u</b></div>
+      <div><span>Conservación</span><b>❄️ Manténgase congelado</b></div>
+    </div>
+  </div>
+
+  <div class="sec" id="formPedido" style="padding-top:0">
+    <h2>Haz tu pedido</h2>
+    <div class="sub">Déjanos tus datos y te contactamos para confirmar</div>
+    <div id="pedidoBox"></div>
+  </div>
+
+  <footer>
+    <div class="mark wordmark">Bocaditos</div>
+    <div>Pedidos y domicilios</div>
+    <a href="https://wa.me/19804226218">+1 (980) 422-6218</a>
+    <div style="margin-top:10px">Sabor de nuestra tierra 🇨🇴</div>
+  </footer>
+</div>
+
 <!-- ============ LOGIN ============ -->
-<div id="login">
+<div id="login" class="hide">
   <div class="mark wordmark">Bocaditos</div>
   <div class="sub">Gestión de producción y ventas</div>
   <form id="loginForm" autocomplete="off">
@@ -225,7 +335,8 @@ label{display:block;font-size:11.5px;font-weight:900;text-transform:uppercase;le
     <div id="loginErr"></div>
     <button type="submit">Entrar</button>
   </form>
-  <div class="hint"><b style="color:#C9B79C">Versión 2.2</b> · <span id="estado">Conectando…</span><br><br>Primer ingreso — administrador<br><b>admin</b> / <b>admin123</b></div>
+  <button type="button" class="corp" style="border-color:#4A3B2C;color:#A08D74;margin-top:18px;background:none;border-radius:20px;padding:9px 14px;font-size:12px;font-weight:800;cursor:pointer" onclick="volverPublico()">← Volver a la página</button>
+  <div class="hint"><b style="color:#C9B79C">Versión 2.6</b> · <span id="estado">Conectando…</span><br><br>Primer ingreso — administrador<br><b>admin</b> / <b>admin123</b></div>
   <div class="spark">✦</div>
 </div>
 
@@ -234,7 +345,7 @@ label{display:block;font-size:11.5px;font-weight:900;text-transform:uppercase;le
   <header>
     <div class="mark wordmark">Bocaditos</div>
     <div style="display:flex;align-items:center;gap:10px">
-      <div class="who"><b id="hName"></b><span id="hRol"></span><span style="color:#6B5A48">v2.2</span></div>
+      <div class="who"><b id="hName"></b><span id="hRol"></span><span style="color:#6B5A48">v2.6</span></div>
       <button class="out" onclick="salir()">Salir</button>
     </div>
   </header>
@@ -301,7 +412,7 @@ function dbNueva(){
   return {
     seq:100,
     usuarios:[{id:1,nombre:'Administrador',usuario:'admin',clave:'admin123',rol:'admin',cargo:'Administrador',vhProd:0,activo:true}],
-    insumos:[], entradas:[], productos:[], lotes:[], asignaciones:[], stockProd:{}
+    insumos:[], entradas:[], productos:[], lotes:[], asignaciones:[], traslados:[], pedidos:[], stockProd:{}
   };
 }
 function nid(){ return ++DB.seq; }
@@ -351,7 +462,7 @@ const puedeVender=u=>u&&(u.rol==='vendedor'||u.rol==='ambos'||u.rol==='admin');
       window.FB.escuchar(json=>{
         if(json===ultimoJSON) return;
         ultimoJSON=json; DB=JSON.parse(json);
-        if(USER){ const u=DB.usuarios.find(x=>x.id==USER.id); if(u) USER=u; render(); }
+        if(USER){ const u=DB.usuarios.find(x=>x.id==USER.id); if(u) USER=u; render(); } else pintarPublico();
       });
       $('estado').textContent='Conectado a la nube';
     }catch(e){
@@ -363,7 +474,108 @@ const puedeVender=u=>u&&(u.rol==='vendedor'||u.rol==='ambos'||u.rol==='admin');
     $('estado').textContent='Sin conexión con la base de datos';
   }
   if(!DB.stockProd) DB.stockProd={};
+  if(!DB.pedidos) DB.pedidos=[];
+  pintarPublico();
 })();
+
+/* ---------- página pública ---------- */
+const EMOJI={queso:'🧀',carne:'🥩',pollo:'🍗'};
+function emojiDe(n){const l=(n||'').toLowerCase();
+  for(const k in EMOJI) if(l.includes(k)) return EMOJI[k];
+  return '🥟';}
+function pintarPublico(){
+  if(!DB||!$('pubProds')) return;
+  const ps=DB.productos||[];
+  $('pubProds').innerHTML= ps.length? ps.map(p=>`<div class="prod">
+    <div class="ic">${emojiDe(p.nombre)}</div>
+    <div><div class="n">${esc(p.nombre)}</div><div class="d">Paquete de 10 unidades</div></div>
+    <div class="p">${money(p.precio)}<small>el paquete</small></div></div>`).join('')
+    : `<p class="ayuda">${sinConexion?'⚠️ Sin conexión con el catálogo. Revisa tu internet.':'Cargando sabores…'}</p>`;
+  pintarTienda();
+}
+
+/* ---------- tienda virtual ---------- */
+let carrito={};
+function cambiaCant(pid,d){
+  carrito[pid]=Math.max(0,(carrito[pid]||0)+d);
+  pintarTienda();
+}
+function pintarTienda(){
+  const box=$('pedidoBox'); if(!box) return;
+  const ps=DB.productos||[];
+  if(!ps.length){ box.innerHTML=`<div style="text-align:center;padding:20px 6px">
+    <div style="font-size:36px">${sinConexion?'⚠️':'⏳'}</div>
+    <p class="ayuda">${sinConexion?'No pudimos cargar el catálogo. Revisa tu conexión e intenta de nuevo.':'Cargando el catálogo…'}</p>
+    <button class="btn ghost" onclick="location.reload()">Reintentar</button></div>`; return; }
+  const ls=lineasPedido(), paq=ls.reduce((a,x)=>a+x.cantidad,0), tot=ls.reduce((a,x)=>a+x.total,0);
+  box.innerHTML=`
+  <div class="tienda">${ps.map(p=>{const q=carrito[p.id]||0;
+    return `<div class="item ${q?'sel':''}">
+      <div class="foto">🥟<div class="bad">10 UND</div></div>
+      <div class="cuerpo">
+        <div class="n">${esc(p.nombre)}</div>
+        <div class="d">Paquete de 10 · 40 g c/u</div>
+        <div class="pr">${money(p.precio)}</div>
+        <div class="step">
+          <button onclick="cambiaCant(${p.id},-1)">−</button>
+          <div class="q">${q}</div>
+          <button onclick="cambiaCant(${p.id},1)">+</button>
+        </div>
+      </div></div>`}).join('')}
+  </div>
+
+  <div class="carrito">
+    <div class="l">Paquetes<b>${num(paq)}</b></div>
+    <div class="l">Empanadas<b>${num(paq*10)}</b></div>
+    <div class="l big">Total<b>${money(tot)}</b></div>
+  </div>
+
+  <div style="margin-top:18px">
+    <div class="eyebrow">Tus datos</div>
+    <div class="f"><label>Nombre</label><input id="pdN" value="${esc(pedidoDatos.n||'')}" placeholder="Nombre y apellido" oninput="pedidoDatos.n=this.value"></div>
+    <div class="f"><label>Teléfono / WhatsApp</label><input id="pdT" type="tel" value="${esc(pedidoDatos.t||'')}" placeholder="(980) 000-0000" oninput="pedidoDatos.t=this.value"></div>
+    <div class="f"><label>¿Cómo lo quieres?</label><select id="pdE" onchange="pedidoDatos.e=this.value;pintarTienda()">
+      <option value="domicilio" ${pedidoDatos.e!='recoger'?'selected':''}>Domicilio</option>
+      <option value="recoger" ${pedidoDatos.e=='recoger'?'selected':''}>Paso a recogerlo</option></select></div>
+    ${pedidoDatos.e!='recoger'?`<div class="f"><label>Dirección de entrega</label><input id="pdD" value="${esc(pedidoDatos.d||'')}" placeholder="Calle, apto, ciudad" oninput="pedidoDatos.d=this.value"></div>`:''}
+    <div class="f"><label>¿Para qué día?</label><input id="pdF" type="date" value="${pedidoDatos.f||hoy()}" onchange="pedidoDatos.f=this.value"></div>
+    <div class="f"><label>Nota (opcional)</label><input id="pdNota" value="${esc(pedidoDatos.nota||'')}" placeholder="Alguna indicación" oninput="pedidoDatos.nota=this.value"></div>
+  </div>
+
+  <button class="btn wide" style="padding:16px;font-size:16px;border-radius:14px;margin-top:12px" onclick="enviarPedido()">Enviar pedido</button>
+  <p class="ayuda" style="text-align:center;margin:10px 0 0">Recibimos tu pedido al instante y te llamamos para confirmar.</p>`;
+}
+let pedidoDatos={n:'',t:'',e:'domicilio',d:'',f:'',nota:''};
+function lineasPedido(){
+  return (DB.productos||[]).map(p=>{const q=carrito[p.id]||0;
+    return {productoId:p.id,nombre:p.nombre,cantidad:q,precio:p.precio,total:q*p.precio};
+  }).filter(x=>x.cantidad>0);
+}
+
+async function enviarPedido(){
+  const d=pedidoDatos, ls=lineasPedido();
+  if(!d.n||!d.t) return toast('Escribe tu nombre y teléfono');
+  if(!ls.length) return toast('Elige al menos un paquete');
+  if(d.e!='recoger'&&!d.d) return toast('Escribe la dirección de entrega');
+  const total=ls.reduce((a,x)=>a+x.total,0);
+  const ped={id:nid(),fecha:new Date().toISOString(),cliente:d.n,telefono:d.t,
+    entrega:d.e,direccion:d.d||'',fechaEntrega:d.f||hoy(),nota:d.nota||'',
+    lineas:ls,total,estado:'pendiente'};
+  if(!DB.pedidos) DB.pedidos=[];
+  DB.pedidos.push(ped);
+  try{ await guardar(); }catch(e){}
+
+  carrito={}; pedidoDatos={n:'',t:'',e:'domicilio',d:'',f:'',nota:''};
+  $('pedidoBox').innerHTML=`<div style="text-align:center;padding:22px 6px">
+    <div style="font-size:46px">✅</div>
+    <h3 style="font-size:21px;margin:8px 0">¡Pedido recibido!</h3>
+    <div class="eyebrow">Pedido #${ped.id}</div>
+    <p class="ayuda">Gracias ${esc(ped.cliente)}. Ya quedó registrado por ${money(ped.total)} y te contactamos al ${esc(ped.telefono)} para confirmarlo.</p>
+    <a class="wa" style="display:block;text-align:center;text-decoration:none;box-sizing:border-box" href="https://wa.me/19804226218" target="_blank">¿Dudas? Escríbenos por WhatsApp</a>
+    <button class="btn ghost wide" style="margin-top:10px" onclick="pintarTienda()">Hacer otro pedido</button>
+  </div>`;
+  toast('¡Pedido registrado!');
+}
 
 $('loginForm').addEventListener('submit',async e=>{
   e.preventDefault();
@@ -372,19 +584,21 @@ $('loginForm').addEventListener('submit',async e=>{
   const encontrado=DB.usuarios.find(x=>x.usuario.toLowerCase()===u && x.clave===c && x.activo!==false);
   if(!encontrado){ $('loginErr').textContent='Usuario o contraseña incorrectos.'; return; }
   USER=encontrado; $('loginErr').textContent=''; $('lp').value='';
-  $('login').classList.add('hide'); $('app').classList.remove('hide');
+  $('login').classList.add('hide'); $('publico').classList.add('hide'); $('app').classList.remove('hide');
   $('hName').textContent=USER.nombre; $('hRol').textContent=ROL[USER.rol];
   VIEW='inicio'; pintarNav(); render();
 });
 
-function salir(){ USER=null; $('app').classList.add('hide'); $('login').classList.remove('hide'); $('lu').value=''; $('lp').value=''; }
+function salir(){ USER=null; $('app').classList.add('hide'); $('publico').classList.remove('hide'); $('lu').value=''; $('lp').value=''; }
+function irCorporativo(){ $('publico').classList.add('hide'); $('login').classList.remove('hide'); }
+function volverPublico(){ $('login').classList.add('hide'); $('publico').classList.remove('hide'); }
 
 /* ---------- navegación ---------- */
 function menuDe(u){
   if(u.rol==='admin') return [
     ['inicio','Inicio','🏠'],['insumos','Insumos','🌽'],['productos','Productos','🥟'],
     ['produccion','Producción','🔥'],['inventario','Bodega','📦'],['ventas','Ventas','🛵'],
-    ['empleados','Equipo','👥'],['reportes','Reportes','📊']
+    ['pedidos','Pedidos','🧾'],['empleados','Equipo','👥'],['reportes','Reportes','📊']
   ];
   const m=[['inicio','Inicio','🏠']];
   if(puedeProducir(u)) m.push(['mishoras','Mis horas','⏱️']);
@@ -401,7 +615,7 @@ function ir(v){ VIEW=v; pintarNav(); render(); window.scrollTo(0,0); }
 
 function render(){
   const f={inicio:vInicio,insumos:vInsumos,productos:vProductos,produccion:vProduccion,
-    inventario:vInventario,ventas:vVentas,empleados:vEmpleados,reportes:vReportes,
+    inventario:vInventario,ventas:vVentas,pedidos:vPedidos,empleados:vEmpleados,reportes:vReportes,
     mishoras:vMisHoras,misventas:vMisVentas}[VIEW]||vInicio;
   $('view').innerHTML=f();
 }
@@ -425,6 +639,10 @@ function vInicio(){
     <div class="stat"><div class="l">Valor en insumos</div><div class="v">${money(valorInv)}</div></div>
     <div class="stat"><div class="l">Insumos en bajo stock</div><div class="v" style="color:${bajos?'var(--rojo)':'inherit'}">${bajos}</div></div>
   </div>
+  ${(DB.pedidos||[]).filter(p=>p.estado=='pendiente').length?`<div class="card" style="border-color:var(--terracota);background:#FDF1E7">
+    <div class="row" style="border:none;padding:0"><div class="g"><div class="t">🧾 Tienes pedidos nuevos</div>
+    <div class="s">${(DB.pedidos||[]).filter(p=>p.estado=='pendiente').length} pedidos esperando confirmación</div></div>
+    <button class="btn sm" onclick="ir('pedidos')">Ver</button></div></div>`:''}
   <div class="card"><h3>Acciones rápidas</h3>
     <div class="grid2" style="gap:8px">
       <button class="btn sm" onclick="ir('produccion');setTimeout(formLote,50)">＋ Nuevo lote</button>
@@ -1234,6 +1452,46 @@ function vReportes(){
   return h;
 }
 
+
+/* =========================================================
+   PEDIDOS DE CLIENTES
+   ========================================================= */
+const EST={pendiente:'a',confirmado:'t',entregado:'v',cancelado:'r'};
+function vPedidos(){
+  const ps=[...(DB.pedidos||[])].reverse();
+  const pend=ps.filter(p=>p.estado=='pendiente');
+  const conf=ps.filter(p=>p.estado=='confirmado');
+  let h=head('Pedidos','Solicitudes hechas desde la página web');
+  h+=`<div class="grid3">
+    <div class="stat acc"><div class="l">Pendientes</div><div class="v">${pend.length}</div></div>
+    <div class="stat"><div class="l">Confirmados</div><div class="v">${conf.length}</div></div>
+    <div class="stat"><div class="l">Por cobrar</div><div class="v" style="font-size:17px">${money(pend.concat(conf).reduce((a,p)=>a+p.total,0))}</div></div></div>`;
+
+  if(!ps.length) return h+`<div class="card">${vacio('🧾','Todavía no hay pedidos desde la página.')}</div>`;
+
+  h+=ps.map(p=>`<div class="card">
+    <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px">
+      <div><div class="eyebrow">Pedido #${p.id}</div><h3 style="font-size:17px">${esc(p.cliente)}</h3>
+        <div class="s" style="font-size:12.5px;color:var(--tinta-3)">${fechaHora(p.fecha)}</div></div>
+      <span class="pill ${EST[p.estado]||'a'}">${p.estado}</span>
+    </div>
+    <div class="row"><div class="g"><div class="t">📞 ${esc(p.telefono)}</div>
+      <div class="s">${p.entrega=='domicilio'?'Domicilio · '+esc(p.direccion||''):'Pasa a recogerlo'} · para el ${fecha(p.fechaEntrega)}</div>
+      ${p.nota?`<div class="s">Nota: ${esc(p.nota)}</div>`:''}</div></div>
+    ${p.lineas.map(l=>`<div class="row"><div class="g"><div class="t">${esc(l.nombre)}</div><div class="s">${money(l.precio)} el paquete</div></div><div class="n">${num(l.cantidad)}<small>${money(l.total)}</small></div></div>`).join('')}
+    <div class="tot"><div class="l big">Total<b>${money(p.total)}</b></div></div>
+    <div class="grid2" style="gap:8px">
+      <a class="btn sm" style="text-align:center;text-decoration:none" href="https://wa.me/1${esc((p.telefono||'').replace(/[^0-9]/g,''))}" target="_blank">WhatsApp</a>
+      ${p.estado=='pendiente'?`<button class="btn sm dark" onclick="estadoPedido(${p.id},'confirmado')">Confirmar</button>`:''}
+      ${p.estado=='confirmado'?`<button class="btn sm dark" onclick="estadoPedido(${p.id},'entregado')">Marcar entregado</button>`:''}
+      ${p.estado!='cancelado'&&p.estado!='entregado'?`<button class="btn sm ghost" style="border-color:var(--rojo);color:var(--rojo)" onclick="estadoPedido(${p.id},'cancelado')">Cancelar</button>`:''}
+    </div></div>`).join('');
+  return h;
+}
+async function estadoPedido(id,est){
+  const p=(DB.pedidos||[]).find(x=>x.id==id); if(!p) return;
+  p.estado=est; await guardar(); render(); toast('Pedido '+est);
+}
 /* =========================================================
    VISTAS DE EMPLEADO
    ========================================================= */
