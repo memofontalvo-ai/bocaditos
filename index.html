@@ -177,6 +177,9 @@ label{display:block;font-size:11.5px;font-weight:900;text-transform:uppercase;le
   font-size:19px;cursor:pointer;padding:6px 8px;line-height:1;opacity:.65}
 #login .pw .eye{color:var(--crema)}
 
+.ayuda{font-size:12.5px;color:var(--tinta-3);margin:0 0 10px;line-height:1.4}
+.bloque{border:1px solid var(--linea);border-radius:12px;padding:10px;margin-bottom:8px;background:#fff}
+
 #modal{position:fixed;inset:0;z-index:80;background:rgba(23,18,14,.55);display:flex;align-items:flex-end;justify-content:center}
 #modal .box{background:var(--papel);width:100%;max-width:560px;border-radius:20px 20px 0 0;padding:18px 16px calc(20px + env(safe-area-inset-bottom));max-height:92vh;overflow:auto}
 @media(min-width:600px){#modal{align-items:center}#modal .box{border-radius:20px}}
@@ -222,7 +225,7 @@ label{display:block;font-size:11.5px;font-weight:900;text-transform:uppercase;le
     <div id="loginErr"></div>
     <button type="submit">Entrar</button>
   </form>
-  <div class="hint"><b style="color:#C9B79C">Versión 1.6</b> · <span id="estado">Conectando…</span><br><br>Primer ingreso — administrador<br><b>admin</b> / <b>admin123</b></div>
+  <div class="hint"><b style="color:#C9B79C">Versión 1.9</b> · <span id="estado">Conectando…</span><br><br>Primer ingreso — administrador<br><b>admin</b> / <b>admin123</b></div>
   <div class="spark">✦</div>
 </div>
 
@@ -231,7 +234,7 @@ label{display:block;font-size:11.5px;font-weight:900;text-transform:uppercase;le
   <header>
     <div class="mark wordmark">Bocaditos</div>
     <div style="display:flex;align-items:center;gap:10px">
-      <div class="who"><b id="hName"></b><span id="hRol"></span><span style="color:#6B5A48">v1.6</span></div>
+      <div class="who"><b id="hName"></b><span id="hRol"></span><span style="color:#6B5A48">v1.9</span></div>
       <button class="out" onclick="salir()">Salir</button>
     </div>
   </header>
@@ -312,6 +315,9 @@ const hoy=()=>new Date().toISOString().slice(0,10);
 function fecha(iso){ if(!iso) return ''; const d=new Date(iso); return d.toLocaleDateString('es-CO',{day:'2-digit',month:'short',year:'numeric'}); }
 function fechaHora(iso){ if(!iso) return ''; const d=new Date(iso); return d.toLocaleDateString('es-CO',{day:'2-digit',month:'short'})+' · '+d.toLocaleTimeString('es-CO',{hour:'2-digit',minute:'2-digit'}); }
 const UNI={g:'gramos',ml:'mililitros',und:'unidades'};
+const CATP={masa:'a',relleno:'v',empaque:'t'};
+const CATS=['masa','relleno','empaque'];
+const catsDe=i=>(i&&i.cats&&i.cats.length)? i.cats : [ (i&&i.tipo)||'masa' ];
 const UNIC={g:'g',ml:'ml',und:'und'};
 const ROL={admin:'Administrador',produccion:'Producción',vendedor:'Vendedor',ambos:'Producción y ventas'};
 
@@ -480,7 +486,7 @@ function vInsumos(){
     const bajo=i.stock<=(i.minimo||0);
     const pct=i.minimo? Math.min(100,(i.stock/(i.minimo*3))*100):100;
     return `<div class="row"><div class="g">
-      <div class="t">${esc(i.nombre)} ${bajo?'<span class="pill r">bajo</span>':''}</div>
+      <div class="t">${esc(i.nombre)} ${catsDe(i).map(c=>`<span class="pill ${CATP[c]}">${c}</span>`).join(' ')} ${bajo?'<span class="pill r">bajo</span>':''}</div>
       <div class="s">${money(i.precio)} por ${UNIC[i.unidad]} · en ${UNI[i.unidad]}</div>
       <div class="bar"><i class="${bajo?'low':''}" style="width:${pct}%"></i></div>
       </div><div class="n">${num(i.stock)}<small>${UNIC[i.unidad]}</small></div>
@@ -501,6 +507,10 @@ function formInsumo(id){
   const i=id?insumo(id):null;
   abrirModal(i?'Editar insumo':'Nuevo insumo',`
   <div class="f"><label>Nombre del insumo</label><input id="iN" value="${i?esc(i.nombre):''}" placeholder="Masa de maíz"></div>
+  <div class="f"><label>¿En qué categorías se usa?</label>
+    <div class="chks">${CATS.map(c=>{const on=i? catsDe(i).includes(c) : c=='masa';
+      return `<label class="chk ${on?'on':''}"><input type="checkbox" id="ic_${c}" ${on?'checked':''} onchange="this.parentNode.classList.toggle('on',this.checked)">${c}</label>`}).join('')}</div>
+    <p class="ayuda" style="margin-top:6px">Puedes marcar varias. Por ejemplo la sal va en masa y en relleno.</p></div>
   <div class="grid2">
     <div class="f"><label>Se mide en</label><select id="iU">
       <option value="g" ${i&&i.unidad=='g'?'selected':''}>Gramos (g)</option>
@@ -515,11 +525,13 @@ function formInsumo(id){
 }
 async function guardarInsumo(id){
   const n=$('iN').value.trim(), u=$('iU').value, p=+$('iP').value||0, m=+$('iM').value||0;
+  const cats=CATS.filter(c=>{const e=$('ic_'+c); return e&&e.checked;});
+  if(!cats.length) return toast('Marca al menos una categoría');
   if(!n) return toast('Escribe el nombre del insumo');
-  if(id){ const i=insumo(id); Object.assign(i,{nombre:n,unidad:u,precio:p,minimo:m}); }
+  if(id){ const i=insumo(id); Object.assign(i,{nombre:n,unidad:u,precio:p,minimo:m,cats}); delete i.tipo; }
   else{
     const s=+$('iS').value||0;
-    const nuevo={id:nid(),nombre:n,unidad:u,precio:p,minimo:m,stock:s};
+    const nuevo={id:nid(),nombre:n,unidad:u,precio:p,minimo:m,cats,stock:s};
     DB.insumos.push(nuevo);
     if(s>0) DB.entradas.push({id:nid(),insumoId:nuevo.id,cantidad:s,precio:p,fecha:new Date().toISOString(),nota:'Inventario inicial'});
   }
@@ -666,181 +678,201 @@ function vProduccion(){
         return `<div class="row"><div class="g"><div class="t">${esc(u?u.nombre:'—')}</div><div class="s">${money(m.valorHora)} por hora</div></div><div class="n">${num(m.horas)} h<small>${money(m.horas*m.valorHora)}</small></div></div>`}).join('')
         : '<p style="font-size:13px;color:var(--tinta-3)">Sin mano de obra registrada.</p>'}
       <div class="eyebrow" style="margin-top:10px">Insumos consumidos</div>
-      ${l.consumos.map(c=>{const i=insumo(c.insumoId);
-        const ds=(c.destinos||[]).map(id=>{const p=producto(id);return p?p.nombre:''}).filter(Boolean);
-        return `<div class="row"><div class="g"><div class="t">${esc(i?i.nombre:'—')}</div><div class="s">${ds.length?esc(ds.join(' · ')):'todos'}</div></div><div class="n">${num(c.cantidad)} ${i?UNIC[i.unidad]:''}<small>${money(c.cantidad*c.precio)}</small></div></div>`}).join('')}
+      ${l.consumos.map(c=>{const i=insumo(c.insumoId); const d=c.destino?producto(c.destino):null;
+        return `<div class="row"><div class="g"><div class="t">${esc(i?i.nombre:'—')}</div><div class="s">${d?'relleno de '+esc(d.nombre):(c.cat=='empaque'?'empaque':'masa')}</div></div><div class="n">${num(c.cantidad)} ${i?UNIC[i.unidad]:''}<small>${money(c.cantidad*c.precio)}</small></div></div>`}).join('')}
     </div>`;
   }).join('') : `<div class="card">${vacio('🔥','Registra el primer lote de producción del día.')}</div>`;
   return h;
 }
 
-let cTmp=[], uniTmp={}, mTmp=[];
+let cTmp=[], uniTmp={}, proyTmp={}, mTmp=[];
+
 function formLote(){
   if(!DB.productos.length) return toast('Primero crea los productos');
-  cTmp=[]; uniTmp={}; mTmp=[];
+  cTmp=[]; uniTmp={}; proyTmp={}; mTmp=[];
   abrirModal('Nuevo lote de producción',`
-  <div class="grid2">
-    <div class="f"><label>Fecha del lote</label><input id="lF" type="date" value="${hoy()}"></div>
-    <div class="f"><label>Empanadas proyectadas</label><input id="lProy" type="number" value="0" placeholder="1000" oninput="pintarLote()"></div>
-  </div>
-  <p style="font-size:12.5px;color:var(--tinta-3);margin:-4px 0 14px">Escribe cuántas empanadas piensan sacar. Con el histórico te sugerimos cuánto de cada insumo necesitan.</p>
+  <div class="f"><label>Fecha del lote</label><input id="lF" type="date" value="${hoy()}"></div>
 
-  <div class="eyebrow">1 · Insumos que se usaron</div>
-  <p style="font-size:12.5px;color:var(--tinta-3);margin:0 0 8px">Marca para qué tipos se usó cada insumo. La masa o el maíz normalmente van marcados para los tres; el relleno solo para el suyo.</p>
-  <div id="cBox"></div>
-  <div class="grid2" style="gap:8px;margin:4px 0 16px">
-    <button class="btn sm ghost" onclick="addCons()">＋ Insumo</button>
-    <button class="btn sm dark" onclick="cargarRecetas()">Cargar insumos de recetas</button>
-  </div>
+  <div class="eyebrow">1 · Qué piensan producir hoy</div>
+  <p class="ayuda">Escribe las empanadas proyectadas de cada tipo. Con el histórico te sugerimos cuánto insumo necesitan.</p>
+  <div id="proyBox"></div>
 
-  <div class="eyebrow">2 · Cuántas empanadas salieron</div>
-  <p style="font-size:12.5px;color:var(--tinta-3);margin:0 0 8px">Solo aparecen los tipos que marcaste arriba. Se convierten solas a paquetes de 10.</p>
+  <div class="eyebrow" style="margin-top:18px">2 · Masa</div>
+  <p class="ayuda">Insumos de la masa. Se reparten entre todas las empanadas que salgan.</p>
+  <div id="masaBox"></div>
+  <button class="btn sm ghost wide" style="margin:4px 0 16px" onclick="addCons(0)">＋ Insumo de masa</button>
+
+  <div class="eyebrow">3 · Rellenos</div>
+  <p class="ayuda">Los insumos de cada relleno solo encarecen su propia empanada.</p>
+  <div id="relBox"></div>
+
+  <div class="eyebrow" style="margin-top:18px">4 · Empaque</div>
+  <p class="ayuda">Bolsas, etiquetas y demás. Se reparten entre todas las empanadas que salgan.</p>
+  <div id="empBox"></div>
+  <button class="btn sm ghost wide" style="margin:4px 0 16px" onclick="addCons(0,'empaque')">＋ Material de empaque</button>
+
+  <div class="eyebrow">5 · Cuántas empanadas salieron</div>
+  <p class="ayuda">Se convierten solas a paquetes de 10.</p>
   <div id="pBox"></div>
 
-  <div class="eyebrow" style="margin-top:16px">3 · Quién trabajó y cuántas horas</div>
+  <div class="eyebrow" style="margin-top:18px">6 · Quién trabajó y cuántas horas</div>
   <div id="mBox"></div>
   <button class="btn sm ghost wide" style="margin:4px 0 10px" onclick="addMano()">＋ Persona</button>
 
   <div id="loteTot"></div>
   <button class="btn wide" onclick="guardarLote()">Cerrar lote y descontar inventario</button>`);
-  pintarLote();
+  pintarProy(); pintarInsumos(); pintarProducidos(); pintarMano(); pintarLoteTot();
 }
 
-/* Los tipos que se pueden producir salen de los insumos marcados */
-function tiposUsados(){
-  const s=[];
-  cTmp.forEach(x=>{ if(x.cantidad>0)(x.destinos||[]).forEach(id=>{ if(!s.includes(id)) s.push(id); }); });
-  return s;
+const insumosDe=c=>DB.insumos.filter(i=>catsDe(i).includes(c));
+const proyDe=id=>proyTmp[id]||0;
+const proyTotal=()=>DB.productos.reduce((a,p)=>a+proyDe(p.id),0);
+function tiposActivos(){
+  return DB.productos.filter(p=>proyDe(p.id)>0 || cTmp.some(x=>x.destino==p.id&&x.cantidad>0)).map(p=>p.id);
 }
+
+/* ---- lectura sin redibujar (evita perder el foco al escribir) ---- */
 function leerLote(){
-  cTmp.forEach((x,i)=>{const s=$('cI'+i);if(!s)return;
-    x.insumoId=+s.value; x.cantidad=+$('cQ'+i).value||0;
-    const d=[]; DB.productos.forEach(p=>{const c=$('cD'+i+'_'+p.id); if(c&&c.checked) d.push(p.id);});
-    x.destinos=d;
+  DB.productos.forEach(p=>{
+    const e=$('py'+p.id); if(e) proyTmp[p.id]=+e.value||0;
+    const u=$('uU'+p.id); if(u) uniTmp[p.id]=+u.value||0;
   });
-  DB.productos.forEach(p=>{const e=$('uU'+p.id); if(e) uniTmp[p.id]=+e.value||0;});
+  cTmp.forEach((x,i)=>{const s=$('cI'+i); if(s) x.insumoId=+s.value;
+    const q=$('cQ'+i); if(q) x.cantidad=+q.value||0;});
   mTmp.forEach((x,i)=>{const s=$('mE'+i);if(s){x.empleadoId=+s.value;x.horas=+$('mH'+i).value||0}});
 }
-function addCons(){if(!DB.insumos.length)return toast('No hay insumos');leerLote();
-  cTmp.push({insumoId:DB.insumos[0].id,cantidad:0,destinos:DB.productos.map(p=>p.id)});pintarLote()}
-function delCons(i){leerLote();cTmp.splice(i,1);pintarLote()}
-function addMano(){const e=DB.usuarios.filter(u=>puedeProducir(u));if(!e.length)return toast('No hay empleados de producción');leerLote();mTmp.push({empleadoId:e[0].id,horas:0});pintarLote()}
-function delMano(i){leerLote();mTmp.splice(i,1);pintarLote()}
-
-function cargarRecetas(){
-  leerLote();
-  const map={};
-  DB.productos.forEach(p=>p.receta.forEach(r=>{
-    if(!map[r.insumoId]) map[r.insumoId]={destinos:[]};
-    if(!map[r.insumoId].destinos.includes(p.id)) map[r.insumoId].destinos.push(p.id);
-  }));
-  const ks=Object.keys(map);
-  if(!ks.length) return toast('Los productos no tienen receta definida');
-  cTmp=ks.map(k=>({insumoId:+k,cantidad:0,destinos:map[k].destinos}));
-  pintarLote(); toast('Insumos cargados · usa los sugeridos');
+function addCons(destino,cat){
+  const c = cat || (destino?'relleno':'masa');
+  const lista=insumosDe(c);
+  if(!lista.length) return toast('No hay insumos en la categoría '+c);
+  leerLote(); cTmp.push({insumoId:lista[0].id,cantidad:0,destino:destino||0,cat:c});
+  pintarInsumos(); pintarProducidos(); pintarLoteTot();
 }
+function delCons(i){leerLote();cTmp.splice(i,1);pintarInsumos();pintarProducidos();pintarLoteTot()}
+function addMano(){const e=DB.usuarios.filter(u=>puedeProducir(u));if(!e.length)return toast('No hay empleados de producción');leerLote();mTmp.push({empleadoId:e[0].id,horas:0});pintarMano();pintarLoteTot()}
+function delMano(i){leerLote();mTmp.splice(i,1);pintarMano();pintarLoteTot()}
 
-/* Promedio histórico de consumo de un insumo por empanada producida */
-function consumoPorUnidad(insumoId){
-  let cant=0, uni=0;
+/* ---- sugeridos según histórico ---- */
+function consumoPorUnidad(insumoId,destino){
+  let cant=0,uni=0;
   DB.lotes.forEach(l=>{
-    const c=l.consumos.filter(x=>x.insumoId==insumoId).reduce((a,x)=>a+x.cantidad,0);
+    const c=(l.consumos||[]).filter(x=>x.insumoId==insumoId && (x.destino||0)==(destino||0))
+                            .reduce((a,x)=>a+x.cantidad,0);
     if(!c) return;
-    const u=l.producidos.reduce((a,x)=>a+(x.unidades||x.cantidad*10),0);
-    if(u>0){ cant+=c; uni+=u; }
+    let u;
+    if(destino){ const d=(l.producidos||[]).find(p=>p.productoId==destino); u=d?(d.unidades||d.cantidad*10):0; }
+    else u=(l.producidos||[]).reduce((a,x)=>a+(x.unidades||x.cantidad*10),0);
+    if(u>0){cant+=c;uni+=u;}
   });
-  return uni? cant/uni : 0;
+  return uni?cant/uni:0;
 }
-function sugerido(insumoId){
-  const proy=+($('lProy')?$('lProy').value:0)||0;
-  if(!proy) return 0;
-  return consumoPorUnidad(insumoId)*proy;
+function sugerido(x){
+  const base = x.destino? proyDe(x.destino) : proyTotal();
+  if(!base) return 0;
+  return consumoPorUnidad(x.insumoId,x.destino)*base;
 }
-function usarSugerido(i){
-  leerLote();
-  cTmp[i].cantidad=Math.round(sugerido(cTmp[i].insumoId)*100)/100;
-  pintarLote();
+function usarSugerido(i){leerLote();cTmp[i].cantidad=Math.round(sugerido(cTmp[i])*100)/100;pintarInsumos();pintarLoteTot()}
+
+/* ---- pintado por secciones ---- */
+function pintarProy(){
+  $('proyBox').innerHTML=DB.productos.map(p=>`<div class="linea-item">
+    <div class="f"><label>${esc(p.nombre)}</label><input id="py${p.id}" type="number" value="${proyDe(p.id)||''}" placeholder="0"
+      oninput="leerLote();pintarInsumos();pintarProducidos();pintarLoteTot()"></div>
+    <div style="min-width:86px;text-align:right;padding-bottom:12px">
+      <div style="font-size:17px;font-weight:900">${num(Math.round(proyDe(p.id)/10*100)/100)}</div>
+      <div style="font-size:10.5px;color:var(--tinta-3);font-weight:800;text-transform:uppercase">paq</div></div>
+    </div>`).join('')
+    +`<div class="tot" style="margin-top:4px"><div class="l big">Total proyectado<b>${num(proyTotal())} empanadas</b></div></div>`;
 }
+function lineaInsumo(x,i){
+  const ins=insumo(x.insumoId), sug=sugerido(x), lista=insumosDe(x.cat||(x.destino?'relleno':'masa'));
+  return `<div class="linea-item" style="flex-wrap:wrap">
+    <div class="f" style="flex:1 1 100%;margin-bottom:8px"><label>Insumo <span style="color:var(--terracota)">disp. ${ins?num(ins.stock)+' '+UNIC[ins.unidad]:''}</span></label>
+      <select id="cI${i}" onchange="leerLote();pintarInsumos();pintarLoteTot()">${lista.map(s=>`<option value="${s.id}" ${s.id==x.insumoId?'selected':''}>${esc(s.nombre)} (${UNIC[s.unidad]})</option>`).join('')}</select></div>
+    <div class="f" style="max-width:130px;margin-bottom:0"><label>Cantidad</label>
+      <input id="cQ${i}" type="number" step="0.01" value="${x.cantidad||''}" placeholder="${sug?num(Math.round(sug)):'0'}" oninput="leerLote();pintarLoteTot()"></div>
+    ${sug?`<button class="btn sm ghost" style="margin-bottom:2px" onclick="usarSugerido(${i})">Usar ${num(Math.round(sug))}</button>`:''}
+    <button class="del" onclick="delCons(${i})">×</button></div>`;
+}
+function pintarInsumos(){
+  const cat=x=>x.cat||(x.destino?'relleno':'masa');
+  const masa=cTmp.map((x,i)=>({x,i})).filter(o=>cat(o.x)=='masa');
+  $('masaBox').innerHTML= masa.length? masa.map(o=>`<div class="bloque">${lineaInsumo(o.x,o.i)}</div>`).join('')
+    : '<p class="ayuda">Agrega los insumos de la masa.</p>';
 
-function pintarLote(){
-  const emp=DB.usuarios.filter(u=>puedeProducir(u));
+  const emp=cTmp.map((x,i)=>({x,i})).filter(o=>cat(o.x)=='empaque');
+  if($('empBox')) $('empBox').innerHTML= emp.length? emp.map(o=>`<div class="bloque">${lineaInsumo(o.x,o.i)}</div>`).join('')
+    : '<p class="ayuda">Agrega los materiales de empaque.</p>';
 
-  $('cBox').innerHTML=cTmp.length? cTmp.map((x,i)=>{const ins=insumo(x.insumoId);
-    const sug=sugerido(x.insumoId);
-    return `<div style="border:1px solid var(--linea);border-radius:12px;padding:10px;margin-bottom:8px;background:#fff">
-    <div class="f" style="margin-bottom:8px"><label>Insumo <span style="color:var(--terracota)">disp. ${ins?num(ins.stock)+' '+UNIC[ins.unidad]:''}</span></label>
-      <select id="cI${i}" onchange="leerLote();pintarLote()">${DB.insumos.map(s=>`<option value="${s.id}" ${s.id==x.insumoId?'selected':''}>${esc(s.nombre)} (${UNIC[s.unidad]})</option>`).join('')}</select></div>
-    <div class="linea-item" style="margin-bottom:${sug?4:10}px">
-      <div class="f" style="max-width:130px;margin-bottom:0"><label>Cantidad</label><input id="cQ${i}" type="number" step="0.01" value="${x.cantidad}" placeholder="${sug?num(Math.round(sug)):'0'}" oninput="leerLote();pintarLote()"></div>
-      <button class="del" onclick="delCons(${i})">×</button></div>
-    ${sug?`<p style="font-size:12px;color:var(--terracota);font-weight:800;margin:0 0 10px">Sugerido: ${num(Math.round(sug))} ${ins?UNIC[ins.unidad]:''} <button class="btn sm ghost" style="padding:4px 9px;margin-left:6px" onclick="usarSugerido(${i})">Usar</button></p>`:''}
-    <label>Se usó para</label>
-    <div class="chks">${DB.productos.map(p=>{const on=(x.destinos||[]).includes(p.id);
-      return `<label class="chk ${on?'on':''}"><input type="checkbox" id="cD${i}_${p.id}" ${on?'checked':''} onchange="leerLote();pintarLote()">${esc(p.nombre)}</label>`}).join('')}</div>
-    </div>`}).join('')
-    : '<p style="font-size:13px;color:var(--tinta-3);margin:0 0 6px">Agrega los insumos o cárgalos desde la receta.</p>';
-
-  const tipos=tiposUsados();
+  $('relBox').innerHTML=DB.productos.map(p=>{
+    const ls=cTmp.map((x,i)=>({x,i})).filter(o=>o.x.destino==p.id);
+    return `<div class="bloque" style="border-left:4px solid var(--terracota)">
+      <div style="font-weight:900;font-size:14.5px;margin-bottom:8px">Relleno · ${esc(p.nombre)}</div>
+      ${ls.map(o=>lineaInsumo(o.x,o.i)).join('')||'<p class="ayuda" style="margin:0 0 8px">Sin insumos de relleno.</p>'}
+      <button class="btn sm ghost wide" onclick="addCons(${p.id})">＋ Insumo de este relleno</button></div>`;
+  }).join('');
+}
+function pintarProducidos(){
+  const tipos=tiposActivos();
   $('pBox').innerHTML= tipos.length? tipos.map(id=>{const p=producto(id); if(!p)return '';
     const u=uniTmp[id]||0;
     return `<div class="linea-item">
-      <div class="f"><label>${esc(p.nombre)}</label><input id="uU${id}" type="number" value="${u}" placeholder="0" oninput="leerLote();pintarLoteTot()"></div>
-      <div style="min-width:92px;text-align:right;padding-bottom:12px">
-        <div style="font-size:19px;font-weight:900;font-variant-numeric:tabular-nums">${num(Math.round(u/10*100)/100)}</div>
-        <div style="font-size:10.5px;color:var(--tinta-3);font-weight:800;text-transform:uppercase">paquetes</div></div>
+      <div class="f"><label>${esc(p.nombre)}</label><input id="uU${id}" type="number" value="${u||''}" placeholder="0" oninput="leerLote();pintarLoteTot()"></div>
+      <div style="min-width:86px;text-align:right;padding-bottom:12px">
+        <div style="font-size:17px;font-weight:900" id="pq${id}">${num(Math.round(u/10*100)/100)}</div>
+        <div style="font-size:10.5px;color:var(--tinta-3);font-weight:800;text-transform:uppercase">paq</div></div>
     </div>`}).join('')
-    : '<p style="font-size:13px;color:var(--tinta-3);margin:0 0 6px">Primero carga los insumos y marca para qué tipos se usaron.</p>';
-
+    : '<p class="ayuda">Primero escribe lo proyectado o carga los rellenos.</p>';
+}
+function pintarMano(){
+  const emp=DB.usuarios.filter(u=>puedeProducir(u));
   $('mBox').innerHTML=mTmp.length? mTmp.map((x,i)=>`<div class="linea-item">
     <div class="f"><label>Empleado</label><select id="mE${i}" onchange="leerLote();pintarLoteTot()">${emp.map(e=>`<option value="${e.id}" ${e.id==x.empleadoId?'selected':''}>${esc(e.nombre)}</option>`).join('')}</select></div>
-    <div class="f" style="max-width:105px"><label>Horas</label><input id="mH${i}" type="number" step="0.25" value="${x.horas}" oninput="leerLote();pintarLoteTot()"></div>
+    <div class="f" style="max-width:105px"><label>Horas</label><input id="mH${i}" type="number" step="0.25" value="${x.horas||''}" placeholder="0" oninput="leerLote();pintarLoteTot()"></div>
     <button class="del" onclick="delMano(${i})">×</button></div>`).join('')
-    : '<p style="font-size:13px;color:var(--tinta-3);margin:0 0 6px">Agrega quiénes trabajaron en este lote.</p>';
-  pintarLoteTot();
+    : '<p class="ayuda">Agrega quiénes trabajaron en este lote.</p>';
 }
 
-/* Cada insumo se reparte solo entre los tipos marcados, en proporción a las
-   empanadas que salieron de cada uno. La mano de obra entre todas.          */
+/* ---- costos: masa entre todas, relleno a su tipo ---- */
 function calcLote(){
   const val=x=>{const i=insumo(x.insumoId); return i? i.precio*x.cantidad : 0;};
-  const tipos=tiposUsados().filter(id=>(uniTmp[id]||0)>0);
+  const tipos=DB.productos.map(p=>p.id).filter(id=>(uniTmp[id]||0)>0);
   const uniDe=id=>uniTmp[id]||0;
   const uniTotal=tipos.reduce((a,id)=>a+uniDe(id),0);
-  const porUni={};
-  tipos.forEach(id=>porUni[id]=0);
+  const porUni={}; tipos.forEach(id=>porUni[id]=0);
 
-  cTmp.forEach(x=>{
-    const v=val(x); if(!v) return;
-    const S=(x.destinos||[]).filter(id=>tipos.includes(id));
-    const uS=S.reduce((a,id)=>a+uniDe(id),0);
-    if(!uS) return;
-    S.forEach(id=>{ porUni[id]+= v/uS; });
-  });
+  const cat=x=>x.cat||(x.destino?'relleno':'masa');
+  const masa=cTmp.filter(x=>cat(x)=='masa').reduce((a,x)=>a+val(x),0);
+  const empaque=cTmp.filter(x=>cat(x)=='empaque').reduce((a,x)=>a+val(x),0);
+  if(uniTotal) tipos.forEach(id=>{ porUni[id]+= (masa+empaque)/uniTotal; });
+
+  const rell={};
+  cTmp.filter(x=>x.destino).forEach(x=>{ rell[x.destino]=(rell[x.destino]||0)+val(x); });
+  tipos.forEach(id=>{ if(rell[id]&&uniDe(id)) porUni[id]+= rell[id]/uniDe(id); });
 
   const cm=mTmp.reduce((a,x)=>{const u=usuario(x.empleadoId);return a+((u?u.vhProd:0)*x.horas)},0);
   if(uniTotal) tipos.forEach(id=>{ porUni[id]+= cm/uniTotal; });
 
   const ci=cTmp.reduce((a,x)=>a+val(x),0);
-  const detalle=tipos.map(id=>({
-    productoId:id, unidades:uniDe(id), cantidad:uniDe(id)/10,
-    costoUni:porUni[id]||0, costoUnit:(porUni[id]||0)*10
-  }));
-  return {ci,cm,total:ci+cm,uni:uniTotal,paq:uniTotal/10,detalle};
+  const detalle=tipos.map(id=>({productoId:id,unidades:uniDe(id),cantidad:uniDe(id)/10,
+    costoUni:porUni[id]||0, costoUnit:(porUni[id]||0)*10}));
+  return {ci,cm,masa,empaque,rell,total:ci+cm,uni:uniTotal,paq:uniTotal/10,detalle};
 }
 function pintarLoteTot(){
-  const c=calcLote();
-  const proy=+($('lProy')?$('lProy').value:0)||0;
+  const c=calcLote(), proy=proyTotal();
   let h=`<div class="tot">
-    <div class="l">Costo de insumos<b>${money(c.ci)}</b></div>
+    <div class="l">Insumos de masa<b>${money(c.masa)}</b></div>
+    <div class="l">Insumos de rellenos<b>${money(c.ci-c.masa-c.empaque)}</b></div>
+    <div class="l">Materiales de empaque<b>${money(c.empaque)}</b></div>
     <div class="l">Mano de obra<b>${money(c.cm)}</b></div>
-    ${proy?`<div class="l">Proyectadas<b>${num(proy)} empanadas</b></div>`:''}
-    <div class="l">Salieron<b>${num(c.uni)} empanadas · ${num(Math.round(c.paq*100)/100)} paq</b></div>
+    ${proy?`<div class="l">Proyectadas<b>${num(proy)}</b></div>`:''}
+    <div class="l">Salieron<b>${num(c.uni)} · ${num(Math.round(c.paq*100)/100)} paq</b></div>
     ${proy&&c.uni?`<div class="l">Rendimiento<b>${(c.uni/proy*100).toFixed(0)}%</b></div>`:''}
     <div class="l big">Costo total del lote<b>${money(c.total)}</b></div></div>`;
   if(c.detalle.length){
     h+='<div class="card"><h3>Costo de este lote por tipo</h3>';
     h+=c.detalle.map(d=>{const p=producto(d.productoId);
-      return `<div class="row"><div class="g"><div class="t">${esc(p?p.nombre:'—')}</div><div class="s">${num(d.unidades)} empanadas · ${num(Math.round(d.cantidad*100)/100)} paquetes</div></div>
+      return `<div class="row"><div class="g"><div class="t">${esc(p?p.nombre:'—')}</div><div class="s">${num(d.unidades)} empanadas · ${num(Math.round(d.cantidad*100)/100)} paq</div></div>
       <div class="n">${money(d.costoUnit)}<small>${money(d.costoUni)} c/empanada</small></div></div>`}).join('');
     h+='</div>';
   }
@@ -863,7 +895,7 @@ async function guardarLote(){
   });
   DB.lotes.push({
     id:nid(), fecha:$('lF').value||hoy(), creado:new Date().toISOString(),
-    proyectado:+($('lProy')?$('lProy').value:0)||0,
+    proyectado:proyTotal(), proyDetalle:{...proyTmp},
     consumos:cons.map(x=>({...x,precio:insumo(x.insumoId).precio})),
     producidos:c.detalle.map(d=>({productoId:d.productoId,unidades:d.unidades,cantidad:d.cantidad,costoUnit:Math.round(d.costoUnit)})),
     mano:mTmp.filter(x=>x.horas>0).map(x=>({empleadoId:x.empleadoId,horas:x.horas,valorHora:usuario(x.empleadoId).vhProd||0})),
