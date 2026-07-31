@@ -100,6 +100,27 @@ h1,h2,h3{margin:0;line-height:1.2}
 #publico footer a{color:var(--crema);font-weight:900;text-decoration:none;font-size:16px}
 
 
+
+#publico .carrusel{position:relative;overflow:hidden;background:var(--masa)}
+#publico .pistas{display:flex;transition:transform .45s cubic-bezier(.4,0,.2,1)}
+#publico .slide{min-width:100%;position:relative}
+#publico .slide img{width:100%;display:block;aspect-ratio:16/10;object-fit:cover}
+#publico .slide .cap{position:absolute;left:0;right:0;bottom:0;padding:34px 18px 16px;
+  background:linear-gradient(to top,rgba(23,18,14,.88),transparent);color:var(--crema)}
+#publico .slide .cap b{display:block;font-size:19px;font-weight:900;line-height:1.2}
+#publico .slide .cap span{font-size:13px;color:#E4CFAE}
+#publico .puntos{position:absolute;bottom:9px;left:0;right:0;display:flex;gap:6px;justify-content:center}
+#publico .puntos i{width:7px;height:7px;border-radius:50%;background:rgba(247,226,188,.4);cursor:pointer}
+#publico .puntos i.on{background:var(--crema);width:20px;border-radius:6px}
+#publico .flecha{position:absolute;top:50%;transform:translateY(-50%);background:rgba(23,18,14,.5);
+  color:var(--crema);border:none;width:36px;height:36px;border-radius:50%;font-size:19px;cursor:pointer;line-height:1}
+#publico .flecha.izq{left:8px}#publico .flecha.der{right:8px}
+#publico .prod .ic img,.menu-item .foto img{width:100%;height:100%;object-fit:cover;border-radius:inherit}
+#publico .prod .ic,.menu-item .foto{overflow:hidden}
+.subir{border:2px dashed var(--linea);border-radius:14px;padding:16px;text-align:center;background:var(--papel);cursor:pointer}
+.subir input{display:none}
+.mini{width:100%;aspect-ratio:16/10;object-fit:cover;border-radius:12px;display:block}
+
 /* ---------- VENTANA DE PEDIDO ---------- */
 #pedidoModal{position:fixed;inset:0;z-index:95;background:var(--papel);display:flex;flex-direction:column}
 #pedidoModal .ph{background:var(--masa);color:var(--crema);display:flex;align-items:center;
@@ -316,6 +337,8 @@ label{display:block;font-size:11.5px;font-weight:900;text-transform:uppercase;le
     <button class="corp" onclick="irCorporativo()">🔒 Acceso corporativo</button>
   </div>
 
+  <div class="carrusel" id="carrusel"></div>
+
   <div class="hero">
     <div class="flag"></div>
     <div class="sello100"><b>100%</b><span>MAÍZ</span></div>
@@ -384,7 +407,7 @@ label{display:block;font-size:11.5px;font-weight:900;text-transform:uppercase;le
     <button type="submit">Entrar</button>
   </form>
   <button type="button" class="corp" style="border-color:#4A3B2C;color:#A08D74;margin-top:18px;background:none;border-radius:20px;padding:9px 14px;font-size:12px;font-weight:800;cursor:pointer" onclick="volverPublico()">← Volver a la página</button>
-  <div class="hint"><b style="color:#C9B79C">Versión 3.0</b> · <span id="estado">Conectando…</span><br><br>Primer ingreso — administrador<br><b>admin</b> / <b>admin123</b></div>
+  <div class="hint"><b style="color:#C9B79C">Versión 3.1</b> · <span id="estado">Conectando…</span><br><br>Primer ingreso — administrador<br><b>admin</b> / <b>admin123</b></div>
   <div class="spark">✦</div>
 </div>
 
@@ -393,7 +416,7 @@ label{display:block;font-size:11.5px;font-weight:900;text-transform:uppercase;le
   <header>
     <div class="mark wordmark">Bocaditos</div>
     <div style="display:flex;align-items:center;gap:10px">
-      <div class="who"><b id="hName"></b><span id="hRol"></span><span style="color:#6B5A48">v3.0</span></div>
+      <div class="who"><b id="hName"></b><span id="hRol"></span><span style="color:#6B5A48">v3.1</span></div>
       <button class="out" onclick="salir()">Salir</button>
     </div>
   </header>
@@ -421,12 +444,16 @@ const firebaseConfig = {
 
 const app = initializeApp(firebaseConfig);
 const db  = getFirestore(app);
-const ref = doc(db, "bocaditos", "datos");
+const ref  = doc(db, "bocaditos", "datos");
+const refI = doc(db, "bocaditos", "imagenes");
 
 window.FB = {
   leer:   ()      => getDoc(ref),
   grabar: (json)  => setDoc(ref, { json, actualizado: Date.now() }),
-  escuchar:(cb)   => onSnapshot(ref, s => { if(s.exists()) cb(s.data().json); })
+  escuchar:(cb)   => onSnapshot(ref, s => { if(s.exists()) cb(s.data().json); }),
+  leerImg:  ()     => getDoc(refI),
+  grabarImg:(json) => setDoc(refI, { json, actualizado: Date.now() }),
+  escucharImg:(cb) => onSnapshot(refI, s => { if(s.exists()) cb(s.data().json); })
 };
 window.dispatchEvent(new Event('fb-listo'));
 </script>
@@ -437,7 +464,7 @@ window.dispatchEvent(new Event('fb-listo'));
    Datos en la nube con Firestore (proyecto bocaditos-b8d60)
    ========================================================= */
 
-let DB=null, USER=null, VIEW='inicio';
+let DB=null, IMGS={slides:[],productos:{}}, USER=null, VIEW='inicio';
 let ultimoJSON='', sinConexion=false;
 
 /* ---------- almacenamiento en Firestore ---------- */
@@ -447,6 +474,11 @@ function esperarFB(){
     window.addEventListener('fb-listo', ()=>res(), {once:true});
     setTimeout(res, 8000); // si no carga, seguimos sin nube
   });
+}
+async function guardarImgs(){
+  if(!window.FB) return toast('Sin conexión');
+  try{ await window.FB.grabarImg(JSON.stringify(IMGS)); }
+  catch(e){ toast('No se pudo guardar la imagen'); }
 }
 async function guardar(){
   const json=JSON.stringify(DB);
@@ -512,6 +544,11 @@ const puedeVender=u=>u&&(u.rol==='vendedor'||u.rol==='ambos'||u.rol==='admin');
         ultimoJSON=json; DB=JSON.parse(json);
         if(USER){ const u=DB.usuarios.find(x=>x.id==USER.id); if(u) USER=u; render(); } else pintarPublico();
       });
+      try{
+        const si=await window.FB.leerImg();
+        if(si.exists()&&si.data().json) IMGS=JSON.parse(si.data().json);
+        window.FB.escucharImg(j=>{ try{IMGS=JSON.parse(j); if(!USER) pintarPublico();}catch(e){} });
+      }catch(e){}
       $('estado').textContent='Conectado a la nube';
     }catch(e){
       DB=dbNueva(); sinConexion=true;
@@ -572,11 +609,36 @@ function telCompleto(p){
 function emojiDe(n){const l=(n||'').toLowerCase();
   for(const k in EMOJI) if(l.includes(k)) return EMOJI[k];
   return '🥟';}
+let slideActual=0, slideTimer=null;
+function fotoProd(pid){ return (IMGS.productos&&IMGS.productos[pid])||null; }
+function pintarCarrusel(){
+  const c=$('carrusel'); if(!c) return;
+  const sl=(IMGS.slides||[]).filter(x=>x.img);
+  if(!sl.length){ c.innerHTML=''; c.style.display='none'; return; }
+  c.style.display='block';
+  if(slideActual>=sl.length) slideActual=0;
+  c.innerHTML=`<div class="pistas" id="pistas" style="transform:translateX(-${slideActual*100}%)">
+    ${sl.map(x=>`<div class="slide"><img src="${x.img}" alt="">
+      ${(x.titulo||x.texto)?`<div class="cap">${x.titulo?`<b>${esc(x.titulo)}</b>`:''}${x.texto?`<span>${esc(x.texto)}</span>`:''}</div>`:''}
+    </div>`).join('')}</div>
+    ${sl.length>1?`<button class="flecha izq" onclick="moverSlide(-1)">‹</button>
+    <button class="flecha der" onclick="moverSlide(1)">›</button>
+    <div class="puntos">${sl.map((x,i)=>`<i class="${i==slideActual?'on':''}" onclick="verSlide(${i})"></i>`).join('')}</div>`:''}`;
+  if(slideTimer) clearInterval(slideTimer);
+  if(sl.length>1) slideTimer=setInterval(()=>moverSlide(1),5000);
+}
+function moverSlide(d){
+  const n=(IMGS.slides||[]).filter(x=>x.img).length; if(!n) return;
+  slideActual=(slideActual+d+n)%n; pintarCarrusel();
+}
+function verSlide(i){ slideActual=i; pintarCarrusel(); }
+
 function pintarPublico(){
   if(!DB||!$('pubProds')) return;
+  pintarCarrusel();
   const ps=DB.productos||[];
   $('pubProds').innerHTML= ps.length? ps.map(p=>`<div class="prod">
-    <div class="ic">${emojiDe(p.nombre)}</div>
+    <div class="ic">${fotoProd(p.id)?`<img src="${fotoProd(p.id)}" alt="">`:emojiDe(p.nombre)}</div>
     <div><div class="n">${esc(p.nombre)}</div><div class="d">Paquete de 10 unidades</div></div>
     <div class="p">${money(p.precio)}<small>el paquete</small></div></div>`).join('')
     : `<p class="ayuda">${sinConexion?'⚠️ Sin conexión con el catálogo. Revisa tu internet.':'Cargando sabores…'}</p>`;
@@ -614,7 +676,7 @@ function pintarTienda(){
   <p class="ayuda">Cada paquete trae 10 empanadas de 40 g</p>
   ${ps.map(p=>{const q=carrito[p.id]||0;
     return `<div class="menu-item ${q?'sel':''}">
-      <div class="foto">${emojiDe(p.nombre)}</div>
+      <div class="foto">${fotoProd(p.id)?`<img src="${fotoProd(p.id)}" alt="">`:emojiDe(p.nombre)}</div>
       <div class="info">
         <div class="n">${esc(p.nombre)}</div>
         <div class="d">Paquete de 10 unidades</div>
@@ -710,7 +772,7 @@ function menuDe(u){
   if(u.rol==='admin') return [
     ['inicio','Inicio','🏠'],['insumos','Insumos','🌽'],['productos','Productos','🥟'],
     ['produccion','Producción','🔥'],['inventario','Bodega','📦'],['ventas','Ventas','🛵'],
-    ['pedidos','Pedidos','🧾'],['empleados','Equipo','👥'],['reportes','Reportes','📊']
+    ['pedidos','Pedidos','🧾'],['sitio','Página','🌐'],['empleados','Equipo','👥'],['reportes','Reportes','📊']
   ];
   const m=[['inicio','Inicio','🏠']];
   if(puedeProducir(u)) m.push(['mishoras','Mis horas','⏱️']);
@@ -727,7 +789,7 @@ function ir(v){ VIEW=v; pintarNav(); render(); window.scrollTo(0,0); }
 
 function render(){
   const f={inicio:vInicio,insumos:vInsumos,productos:vProductos,produccion:vProduccion,
-    inventario:vInventario,ventas:vVentas,pedidos:vPedidos,empleados:vEmpleados,reportes:vReportes,
+    inventario:vInventario,ventas:vVentas,pedidos:vPedidos,sitio:vSitio,empleados:vEmpleados,reportes:vReportes,
     mishoras:vMisHoras,misventas:vMisVentas}[VIEW]||vInicio;
   $('view').innerHTML=f();
 }
@@ -1612,6 +1674,99 @@ async function estadoPedido(id,est){
   const p=(DB.pedidos||[]).find(x=>x.id==id); if(!p) return;
   p.estado=est; await guardar(); render(); toast('Pedido '+est);
 }
+/* =========================================================
+   CONFIGURAR LA PÁGINA WEB
+   ========================================================= */
+function vSitio(){
+  const sl=IMGS.slides||[];
+  let h=head('Página web','Carrusel y fotos de los productos');
+  h+=`<div class="card"><h3>Carrusel de la portada</h3>
+    <p class="ayuda">Publica promociones o fotos del producto. Rotan solas cada 5 segundos.</p>
+    <label class="subir" style="display:block">
+      <input type="file" accept="image/*" onchange="subirSlide(this)">
+      <div style="font-size:30px">🖼️</div>
+      <div style="font-weight:900;font-size:14px;margin-top:4px">Agregar imagen al carrusel</div>
+      <div class="ayuda" style="margin:2px 0 0">Se comprime automáticamente</div>
+    </label>`;
+  h+= sl.length? sl.map((x,i)=>`<div class="bloque" style="margin-top:10px">
+      <img class="mini" src="${x.img}" alt="">
+      <div class="f" style="margin:10px 0 8px"><label>Título</label>
+        <input value="${esc(x.titulo||'')}" placeholder="¡Promoción!" onchange="editSlide(${i},'titulo',this.value)"></div>
+      <div class="f" style="margin-bottom:10px"><label>Texto</label>
+        <input value="${esc(x.texto||'')}" placeholder="2x1 en empanadas de queso" onchange="editSlide(${i},'texto',this.value)"></div>
+      <div class="grid3" style="gap:6px">
+        <button class="btn sm ghost" onclick="ordenSlide(${i},-1)">↑ Subir</button>
+        <button class="btn sm ghost" onclick="ordenSlide(${i},1)">↓ Bajar</button>
+        <button class="btn sm ghost" style="border-color:var(--rojo);color:var(--rojo)" onclick="borrarSlide(${i})">Eliminar</button>
+      </div></div>`).join('')
+    : `<p class="ayuda" style="margin-top:10px">Aún no hay imágenes en el carrusel.</p>`;
+  h+='</div>';
+
+  h+=`<div class="card"><h3>Fotos de los productos</h3>
+    <p class="ayuda">Se muestran en la página y en la carta de pedidos.</p>`;
+  h+= (DB.productos||[]).map(p=>{const f=fotoProd(p.id);
+    return `<div class="bloque" style="display:flex;gap:12px;align-items:center">
+      <div style="width:72px;height:72px;border-radius:14px;overflow:hidden;flex-shrink:0;
+        background:radial-gradient(110% 90% at 50% 30%,#E9903B,#B14A16);display:flex;align-items:center;justify-content:center;font-size:34px">
+        ${f?`<img src="${f}" style="width:100%;height:100%;object-fit:cover">`:emojiDe(p.nombre)}</div>
+      <div style="flex:1;min-width:0">
+        <div style="font-weight:900;font-size:15px">${esc(p.nombre)}</div>
+        <div class="grid2" style="gap:6px;margin-top:8px">
+          <label class="btn sm ghost" style="text-align:center;margin:0;text-transform:none;letter-spacing:0;font-size:13px">
+            <input type="file" accept="image/*" style="display:none" onchange="subirFotoProd(${p.id},this)">${f?'Cambiar':'Subir foto'}</label>
+          ${f?`<button class="btn sm ghost" style="border-color:var(--rojo);color:var(--rojo)" onclick="quitarFotoProd(${p.id})">Quitar</button>`:''}
+        </div></div></div>`}).join('')||'<p class="ayuda">Primero crea productos.</p>';
+  h+='</div>';
+  return h;
+}
+
+/* comprime la imagen antes de guardarla */
+function comprimir(file,max,calidad){
+  return new Promise((res,rej)=>{
+    const fr=new FileReader();
+    fr.onload=()=>{ const im=new Image();
+      im.onload=()=>{
+        let w=im.width,hh=im.height;
+        if(w>max){ hh=Math.round(hh*max/w); w=max; }
+        const cv=document.createElement('canvas'); cv.width=w; cv.height=hh;
+        cv.getContext('2d').drawImage(im,0,0,w,hh);
+        res(cv.toDataURL('image/jpeg',calidad));
+      };
+      im.onerror=rej; im.src=fr.result; };
+    fr.onerror=rej; fr.readAsDataURL(file);
+  });
+}
+async function subirSlide(inp){
+  const f=inp.files&&inp.files[0]; if(!f) return;
+  toast('Procesando imagen…');
+  try{
+    const img=await comprimir(f,1000,.62);
+    if(!IMGS.slides) IMGS.slides=[];
+    IMGS.slides.push({img,titulo:'',texto:''});
+    await guardarImgs(); render(); toast('Imagen agregada');
+  }catch(e){ toast('No se pudo leer la imagen'); }
+  inp.value='';
+}
+async function editSlide(i,campo,v){ IMGS.slides[i][campo]=v; await guardarImgs(); }
+async function borrarSlide(i){ IMGS.slides.splice(i,1); await guardarImgs(); render(); toast('Imagen eliminada'); }
+async function ordenSlide(i,d){
+  const j=i+d; if(j<0||j>=IMGS.slides.length) return;
+  const t=IMGS.slides[i]; IMGS.slides[i]=IMGS.slides[j]; IMGS.slides[j]=t;
+  await guardarImgs(); render();
+}
+async function subirFotoProd(pid,inp){
+  const f=inp.files&&inp.files[0]; if(!f) return;
+  toast('Procesando foto…');
+  try{
+    const img=await comprimir(f,600,.62);
+    if(!IMGS.productos) IMGS.productos={};
+    IMGS.productos[pid]=img;
+    await guardarImgs(); render(); toast('Foto guardada');
+  }catch(e){ toast('No se pudo leer la foto'); }
+  inp.value='';
+}
+async function quitarFotoProd(pid){ delete IMGS.productos[pid]; await guardarImgs(); render(); toast('Foto quitada'); }
+
 /* =========================================================
    VISTAS DE EMPLEADO
    ========================================================= */
