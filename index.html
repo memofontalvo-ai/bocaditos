@@ -225,7 +225,7 @@ label{display:block;font-size:11.5px;font-weight:900;text-transform:uppercase;le
     <div id="loginErr"></div>
     <button type="submit">Entrar</button>
   </form>
-  <div class="hint"><b style="color:#C9B79C">Versión 2.1</b> · <span id="estado">Conectando…</span><br><br>Primer ingreso — administrador<br><b>admin</b> / <b>admin123</b></div>
+  <div class="hint"><b style="color:#C9B79C">Versión 2.2</b> · <span id="estado">Conectando…</span><br><br>Primer ingreso — administrador<br><b>admin</b> / <b>admin123</b></div>
   <div class="spark">✦</div>
 </div>
 
@@ -234,7 +234,7 @@ label{display:block;font-size:11.5px;font-weight:900;text-transform:uppercase;le
   <header>
     <div class="mark wordmark">Bocaditos</div>
     <div style="display:flex;align-items:center;gap:10px">
-      <div class="who"><b id="hName"></b><span id="hRol"></span><span style="color:#6B5A48">v2.1</span></div>
+      <div class="who"><b id="hName"></b><span id="hRol"></span><span style="color:#6B5A48">v2.2</span></div>
       <button class="out" onclick="salir()">Salir</button>
     </div>
   </header>
@@ -1019,7 +1019,8 @@ async function borrarEmpleado(id){
    VENTAS / COMERCIAL
    ========================================================= */
 function vVentas(){
-  let h=head('Ventas','Asignaciones a vendedores y comisiones',`<button class="btn sm" onclick="formAsignar()">＋ Asignar</button>`);
+  let h=head('Ventas','Asignaciones, traslados y comisiones',`<button class="btn sm" onclick="formAsignar()">＋ Asignar</button>`);
+  h+=`<button class="btn ghost wide" style="margin-bottom:12px" onclick="formTraslado()">🔄 Trasladar entre vendedores</button>`;
   const pend=DB.asignaciones.reduce((a,x)=>a+(x.cantidad-x.vendidas),0);
   const vend=DB.asignaciones.reduce((a,x)=>a+x.valorVendido,0);
   const com=DB.asignaciones.reduce((a,x)=>a+x.comisionGanada,0);
@@ -1038,13 +1039,22 @@ function vVentas(){
   }).join('') : vacio('👥','No hay vendedores registrados.');
   h+='</div>';
 
+  const tr=[...(DB.traslados||[])].reverse();
+  if(tr.length){
+    h+='<div class="card"><h3>Traslados</h3>';
+    h+=tr.slice(0,15).map(t=>{const p=producto(t.productoId), de=usuario(t.deId), a=usuario(t.aId);
+      return `<div class="row"><div class="g"><div class="t">${esc(de?de.nombre:'—')} → ${esc(a?a.nombre:'—')}</div>
+        <div class="s">${esc(p?p.nombre:'—')} · ${fechaHora(t.fecha)}</div></div>
+        <div class="n">${num(t.cantidad)}<small>paquetes</small></div></div>`}).join('');
+    h+='</div>';
+  }
   h+='<div class="card"><h3>Asignaciones</h3>';
   const as=[...DB.asignaciones].reverse();
   h+= as.length? as.map(a=>{
     const p=producto(a.productoId), v=usuario(a.vendedorId), rest=a.cantidad-a.vendidas;
     return `<div class="row"><div class="g">
       <div class="t">${esc(p?p.nombre:'—')} ${rest>0?'<span class="pill a">pendiente</span>':'<span class="pill v">vendido</span>'}</div>
-      <div class="s">${esc(v?v.nombre:'—')} · ${fechaHora(a.fecha)}</div>
+      <div class="s">${esc(v?v.nombre:'—')} · ${fechaHora(a.fecha)}${a.origen=='traslado'?` · recibido de ${esc((usuario(a.deVendedor)||{}).nombre||'otro')}`:''}</div>
       ${a.cliente?`<div class="s">Cliente: ${esc(a.cliente)} (${esc(a.tipoCliente||'')})</div>`:''}
       </div><div class="n">${a.vendidas}/${a.cantidad}<small>${money(a.comisionGanada)}</small></div>
       ${rest>0?`<button class="btn sm" onclick="formVenta(${a.id})">Vender</button>`:''}</div>`;
@@ -1074,6 +1084,70 @@ async function guardarAsignacion(){
     valorVendido:0,comisionGanada:0,cliente:'',tipoCliente:'',fecha:new Date().toISOString()});
   await guardar(); cerrarModal(); render(); toast('Asignación registrada');
 }
+/* ---------- traslados entre vendedores ---------- */
+function pendientesDe(vendedorId,productoId){
+  return DB.asignaciones.filter(a=>a.vendedorId==vendedorId && a.productoId==productoId)
+    .reduce((s,a)=>s+(a.cantidad-a.vendidas),0);
+}
+function productosConPendiente(vendedorId){
+  return DB.productos.filter(p=>pendientesDe(vendedorId,p.id)>0);
+}
+function formTraslado(){
+  const vs=DB.usuarios.filter(u=>puedeVender(u));
+  const conStock=vs.filter(v=>productosConPendiente(v.id).length);
+  if(!conStock.length) return toast('Ningún vendedor tiene empanadas pendientes');
+  if(vs.length<2) return toast('Necesitas al menos dos vendedores');
+  abrirModal('Trasladar entre vendedores',`
+  <p class="ayuda">Pasa empanadas pendientes de un vendedor a otro. Queda registrado el movimiento.</p>
+  <div class="f"><label>Vendedor que entrega</label><select id="trDe" onchange="pintarTraslado()">
+    ${conStock.map(v=>`<option value="${v.id}">${esc(v.nombre)}</option>`).join('')}</select></div>
+  <div id="trBody"></div>`);
+  pintarTraslado();
+}
+function pintarTraslado(){
+  const deId=+$('trDe').value;
+  const prods=productosConPendiente(deId);
+  const otros=DB.usuarios.filter(u=>puedeVender(u)&&u.id!=deId);
+  if(!prods.length||!otros.length){
+    $('trBody').innerHTML='<p class="ayuda">Ese vendedor no tiene pendientes o no hay otro vendedor.</p>'; return;
+  }
+  $('trBody').innerHTML=`
+  <div class="f"><label>Producto</label><select id="trP" onchange="pintarTrasladoMax()">
+    ${prods.map(p=>`<option value="${p.id}">${esc(p.nombre)} — tiene ${pendientesDe(deId,p.id)} paq</option>`).join('')}</select></div>
+  <div class="f"><label>Paquetes a trasladar <span id="trMax" style="color:var(--terracota)"></span></label>
+    <input id="trQ" type="number" placeholder="0"></div>
+  <div class="f"><label>Vendedor que recibe</label><select id="trA">
+    ${otros.map(v=>`<option value="${v.id}">${esc(v.nombre)}</option>`).join('')}</select></div>
+  <button class="btn wide" onclick="guardarTraslado()">Confirmar traslado</button>`;
+  pintarTrasladoMax();
+}
+function pintarTrasladoMax(){
+  const deId=+$('trDe').value, pid=+$('trP').value;
+  const m=pendientesDe(deId,pid);
+  $('trMax').textContent='· máx. '+m;
+  $('trQ').value=m;
+}
+async function guardarTraslado(){
+  const deId=+$('trDe').value, aId=+$('trA').value, pid=+$('trP').value, q=+$('trQ').value||0;
+  const disp=pendientesDe(deId,pid);
+  if(q<=0) return toast('Escribe la cantidad');
+  if(q>disp) return toast('Solo tiene '+disp+' paquetes pendientes');
+  if(deId==aId) return toast('Elige un vendedor distinto');
+  // descuenta del origen, tomando de las asignaciones más antiguas
+  let falta=q;
+  DB.asignaciones.filter(a=>a.vendedorId==deId&&a.productoId==pid&&(a.cantidad-a.vendidas)>0)
+    .forEach(a=>{ if(falta<=0) return;
+      const puede=Math.min(falta, a.cantidad-a.vendidas);
+      a.cantidad-=puede; falta-=puede; });
+  // crea la asignación en el destino
+  DB.asignaciones.push({id:nid(),vendedorId:aId,productoId:pid,cantidad:q,vendidas:0,
+    valorVendido:0,comisionGanada:0,cliente:'',tipoCliente:'',fecha:new Date().toISOString(),
+    origen:'traslado', deVendedor:deId});
+  if(!DB.traslados) DB.traslados=[];
+  DB.traslados.push({id:nid(),fecha:new Date().toISOString(),deId,aId,productoId:pid,cantidad:q});
+  await guardar(); cerrarModal(); render(); toast('Traslado registrado');
+}
+
 function formVenta(id){
   const a=DB.asignaciones.find(x=>x.id==id); window.__asig=a;
   const p=producto(a.productoId), rest=a.cantidad-a.vendidas;
@@ -1189,10 +1263,20 @@ function vMisVentas(){
   h+='<div class="card"><h3>Mis asignaciones</h3>';
   h+= mias.length? [...mias].reverse().map(a=>{const p=producto(a.productoId),r=a.cantidad-a.vendidas;
     return `<div class="row"><div class="g"><div class="t">${esc(p?p.nombre:'—')} ${r>0?'<span class="pill a">pendiente</span>':'<span class="pill v">vendido</span>'}</div>
-    <div class="s">${fechaHora(a.fecha)}${a.cliente?' · '+esc(a.cliente):''}</div></div>
+    <div class="s">${fechaHora(a.fecha)}${a.origen=='traslado'?` · recibido de ${esc((usuario(a.deVendedor)||{}).nombre||'otro')}`:''}${a.cliente?' · '+esc(a.cliente):''}</div></div>
     <div class="n">${a.vendidas}/${a.cantidad}<small>${money(a.comisionGanada)}</small></div></div>`}).join('')
     : vacio('🛵','No tienes empanadas asignadas.');
   h+='</div>';
+  const mt=(DB.traslados||[]).filter(t=>t.deId==USER.id||t.aId==USER.id);
+  if(mt.length){
+    h+='<div class="card"><h3>Mis traslados</h3>';
+    h+=[...mt].reverse().slice(0,10).map(t=>{const p=producto(t.productoId);
+      const dio=t.deId==USER.id; const otro=usuario(dio?t.aId:t.deId);
+      return `<div class="row"><div class="g"><div class="t">${dio?'Entregué a':'Recibí de'} ${esc(otro?otro.nombre:'—')}</div>
+      <div class="s">${esc(p?p.nombre:'—')} · ${fechaHora(t.fecha)}</div></div>
+      <div class="n" style="color:${dio?'var(--rojo)':'var(--verde)'}">${dio?'−':'+'}${num(t.cantidad)}<small>paquetes</small></div></div>`}).join('');
+    h+='</div>';
+  }
   return h;
 }
 </script>
